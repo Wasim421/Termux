@@ -1,3 +1,44 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+
+class GithubService {
+  // আপনার আসল টোকেনটি এখানে বসান
+  final String _token = "ghp_your_personal_access_token_here";
+
+  Future<void> sendBuildRequest({
+    required String prompt,
+    required String packageName,
+    required String fileName,
+  }) async {
+    final url = Uri.parse('https://api.github.com/repos/Wasim421/Termux/dispatches');
+
+    final response = await http.post(
+      url,
+      headers: {
+        'Authorization': 'token $_token', // আপনার টোকেনটি এখানে কাজ করবে
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        "event_type": "build-event",
+        "client_payload": {
+          "prompt": prompt,
+          "package_name": packageName,
+          "target_sdk": "36",
+          "file_name": fileName,
+        }
+      }),
+    );
+
+    if (response.statusCode == 204) {
+      print("✅ সফলভাবে বিল্ড শুরু হয়েছে!");
+    } else {
+      print("❌ ভুল হয়েছে: ${response.body}");
+    }
+  }
+}
+
+
 void _showAISuggestionDialog(BuildContext context, String fileName) {
   showDialog(
     context: context,
