@@ -1,45 +1,51 @@
+def targetSdkVersion = 35
 
 android {
-    compileSdkVersion targetSdkVersion 
-     signingConfigs {
-    release {
-        storeFile file("upload-keystore.jks")
-        storePassword System.getenv("STORE_PASSWORD")
-        keyAlias System.getenv("KEY_ALIAS")
-        keyPassword System.getenv("KEY_PASSWORD")
-        buildTypes {
-    release {
-        signingConfig signingConfigs.release
+    namespace "com.wasim.ai_apk_builder"
+    compileSdkVersion 35
+
+    signingConfigs {
+        release {
+            // Termux থেকে আপলোড করা কি-স্টোর ফাইল
+            storeFile file("upload-keystore.jks")
+            storePassword System.getenv("STORE_PASSWORD")
+            keyAlias System.getenv("KEY_ALIAS")
+            keyPassword System.getenv("KEY_PASSWORD")
+        }
     }
-}
-    
-    }
-}
-buildTypes {
-    release {
-        signingConfig signingConfigs.release
-    }
-}
-    
-    
+
     defaultConfig {
         applicationId "com.wasim.ai_apk_builder"
-        minSdkVersion 31 // Android 12 (SDK 31) থেকে শুরু
+        minSdkVersion 31 // Android 12 সাপোর্ট
         targetSdkVersion targetSdkVersion
         versionCode 1
         versionName "1.0"
 
-        // Rendering optimization for high-end devices
         multiDexEnabled true
     }
 
     buildTypes {
         release {
-            signingConfig signingConfigs.debug // পরবর্তীতে রিলিজ কি ব্যবহার করবেন
-            minifyEnabled true // কোড সুরক্ষিত রাখতে
+            // রিলিজের জন্য আপনার আসল সাইনিং কনফিগ ব্যবহার হবে
+            signingConfig signingConfigs.release
+            
+            // কোড সুরক্ষিত ও সাইজ ছোট করার জন্য অপ্টিমাইজেশন
+            minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
+        
+        debug {
+            signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = '17'
     }
 }
-
