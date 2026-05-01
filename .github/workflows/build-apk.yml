@@ -1,85 +1,85 @@
-
 name: AI APK Builder Engine
 
 on:
   repository_dispatch:
-    types: [build-event] # যখন আপনি অ্যাপ থেকে সিগন্যাল দেবেন তখন এটি চলবে
+    types: [build-event]
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-  
+      # ১. রিপোজিটরি ফাইলগুলো নিয়ে আসা
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      # ২. জাভা সেটআপ করা
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
 
+      # ৩. ফ্লাটার সেটআপ করা
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.x'
           channel: 'stable'
 
+      # ৪. পাইথন লাইব্রেরি ইনস্টল করা (AI ও ইমেজের জন্য)
       - name: Install Python Dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Install Dependencies
-        run: flutter pub get
-
-      - name: Change Package Name
+      # ৫. প্যাকেজ নাম এবং SDK ডাইনামিকালি পরিবর্তন
+      - name: Update Package and SDK
         run: |
           NEW_PKG="${{ github.event.client_payload.package_name }}"
-          # AndroidManifest এবং build.gradle এ প্যাকেজ নাম পরিবর্তন
+          TARGET_SDK="${{ github.event.client_payload.target_sdk }}"
+          if [ -z "$TARGET_SDK" ]; then TARGET_SDK="35"; fi
+          
+          echo "Updating to Package: $NEW_PKG and SDK: $TARGET_SDK"
           sed -i "s/com.example.default/$NEW_PKG/g" android/app/build.gradle
           sed -i "s/com.example.default/$NEW_PKG/g" android/app/src/main/AndroidManifest.xml
-      - name: SDK Auto-Bridge (Dynamic Update)
-        run: |
-          TARGET_SDK="${{ github.event.client_payload.target_sdk }}"
-          # Default value যদি কোনো SDK না পাঠানো হয় (ধরি ১৬ যা SDK 36)
-          if [ -z "$TARGET_SDK" ]; then TARGET_SDK="36"; fi
-          
-          echo "Updating SDK to Android Version: $TARGET_SDK"
-          
-          # build.gradle ফাইলে compileSdkVersion এবং targetSdkVersion পরিবর্তন
           sed -i "s/compileSdkVersion [0-9]*/compileSdkVersion $TARGET_SDK/g" android/app/build.gradle
           sed -i "s/targetSdkVersion [0-9]*/targetSdkVersion $TARGET_SDK/g" android/app/build.gradle
 
-      - name: Register Assets Automatically
+      # ৬. অ্যাসেটস অটো-রেজিস্ট্রেশন
+      - name: Register Assets
         run: |
-          # assets ফোল্ডার না থাকলে তৈরি করবে
           mkdir -p assets
-          # pubspec.yaml এ assets সেকশন না থাকলে অ্যাড করবে
           if ! grep -q "assets:" pubspec.yaml; then
             echo "  assets:" >> pubspec.yaml
             echo "    - assets/" >> pubspec.yaml
           fi
 
+      # ৭. AI কোড ইনজেকশন (Gemini দিয়ে main.dart তৈরি)
       - name: AI Code Injection
         run: |
-          python3 builder_script.py "${{ github.event.client_payload.prompt }}"
-          # এটি আপনার প্রম্পট অনুযায়ী lib/main.dart আপডেট করবে
+          python3 builder_script.py "${{ github.event.client_payload.prompt }}" "${{ github.event.client_payload.asset_name }}"
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
-      - name: Build APK (Android 12-17 Support)
+      # ৮. ফ্লাটার ডিপেন্ডেন্সি ইনস্টল
+      - name: Install Flutter Dependencies
+        run: flutter pub get
+
+      # ৯. ফাইনাল APK বিল্ড (Keystore এনভায়রনমেন্টসহ)
+      - name: Build APK (Release)
         run: |
           flutter build apk --release \
           --split-per-abi \
           --target-platform android-arm64
-          env:
-          # GitHub Secrets থেকে পাসওয়ার্ডগুলো এখানে আসবে
+        env:
           STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          
 
+      # ১০. তৈরি হওয়া APK ফাইলটি আপলোড করা
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Generated-AI-APK
           path: build/app/outputs/flutter-apk/app-release.apk
+          
