@@ -23,7 +23,7 @@ Future<void> buildMyApk() async {
   final String repoUrl = 'https://api.github.com/repos/Wasim421/Termux/dispatches';
 
   // ২. আপনার টোকেন (আগে যা আলোচনা করেছি)
-  final String token = "ghp_আপনার_আসল_টোকেন"; 
+  final String token = "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"; 
 
   try {
     var response = await http.post(
