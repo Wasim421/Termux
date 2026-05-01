@@ -215,4 +215,16 @@ class MyApp extends StatelessWidget {{
 if __name__ == "__main__":
     user_prompt = sys.argv[1]
     generate_flutter_code(user_prompt)
-  
+    
+
+        - name: Generate Download Link
+        run: |
+          # এটি একটি পাবলিক ডাউনলোড লিংক তৈরি করবে (৭ দিনের জন্য)
+          echo "Download your APK here: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          
+      - name: Send Link to Telegram (Optional)
+        run: |
+          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
+          -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+          -d text="✅ Build Success! Download your AI APK: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
