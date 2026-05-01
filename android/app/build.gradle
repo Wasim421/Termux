@@ -1,1 +1,28 @@
+def targetSdkVersion = 35 // বর্তমানে এটি অ্যান্ড্রয়েড ১৫ (SDK 35) পর্যন্ত আপডেট রাখা ভালো
+// তবে ফিউচার সাপোর্ট (১৬, ১৭) এর জন্য যখন Flutter আপডেট হবে, 
+// তখন এই ভ্যালুটি কেবল বাড়িয়ে দিলেই হবে।
+
+android {
+    compileSdkVersion targetSdkVersion 
+
+    defaultConfig {
+        applicationId "com.wasim.ai_apk_builder"
+        minSdkVersion 31 // Android 12 (SDK 31) থেকে শুরু
+        targetSdkVersion targetSdkVersion
+        versionCode 1
+        versionName "1.0"
+
+        // Rendering optimization for high-end devices
+        multiDexEnabled true
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.debug // পরবর্তীতে রিলিজ কি ব্যবহার করবেন
+            minifyEnabled true // কোড সুরক্ষিত রাখতে
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+}
 
