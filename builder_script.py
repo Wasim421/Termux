@@ -1,5 +1,18 @@
 import sys
 import os
+def handle_customization(prompt, image_name):
+    if "background" in prompt:
+        return f"Stack(children: [Image.asset('assets/{image_name}', fit: BoxFit.cover, width: double.infinity, height: double.infinity), Container(color: Colors.black.withOpacity(0.4))])"
+    
+    elif "splash" in prompt:
+        return f"Center(child: Image.asset('assets/{image_name}', width: 200).animate().fadeIn(duration: 500.ms))"
+    
+    elif "button" in prompt:
+        return f"ElevatedButton(onPressed: (){{}}, child: Image.asset('assets/{image_name}', height: 30))"
+
+    # অন্য সব ক্ষেত্রে ডিফল্ট ডিজাইন
+    return f"Image.asset('assets/{image_name}')"
+    
 def generate_asset_widget(file_name, prompt):
     # GIF হলে এনিমেশন লজিক
     if file_name.endswith('.gif'):
