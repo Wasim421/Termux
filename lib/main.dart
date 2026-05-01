@@ -1,14 +1,14 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
+// আপনি চাইলে shared_preferences ব্যবহার করে টোকেন সেভ রাখতে পারেন
 
 class GithubService {
-  // ১. আপনার গিটহাব কনফিগ
   final String repoUrl = 'https://api.github.com/repos/Wasim421/Termux/dispatches';
-  final String token = "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"; 
 
-  // ২. বিল্ড রিকোয়েস্ট পাঠানোর মেইন ফাংশন
+  // টোকেনটি এখন আর্গুমেন্ট হিসেবে আসবে অথবা স্টোরেজ থেকে রিড করবে
   Future<void> sendBuildRequest({
+    required String token, // ইউজার ইনপুট থেকে আসবে
     required String prompt,
     required String packageName,
     required String assetName,
@@ -26,24 +26,24 @@ class GithubService {
           "client_payload": {
             "prompt": prompt,
             "package_name": packageName,
-            "asset_name": assetName, // পাইথন স্ক্রিপ্টের জন্য এটি জরুরি
+            "asset_name": assetName,
             "target_sdk": "35"
           }
         }),
       );
 
       if (response.statusCode == 204) {
-        print("✅ বিল্ড শুরু হয়েছে!");
+        print("✅ বিল্ড রিকোয়েস্ট সফল!");
       } else {
-        print("❌ এরর: ${response.statusCode} - ${response.body}");
+        print("❌ এরর: ${response.statusCode}");
       }
     } catch (e) {
       print("❌ নেটওয়ার্ক এরর: $e");
     }
   }
 
-  // ৩. বিল্ড স্ট্যাটাস চেক করার ফাংশন (Progress Bar এর জন্য)
-  Future<void> checkBuildStatus(String runId, Function(int) updateProgress) async {
+  // রান আইডি দিয়ে স্ট্যাটাস চেক
+  Future<void> checkBuildStatus(String token, String runId, Function(int) updateProgress) async {
     final statusUrl = 'https://api.github.com/repos/Wasim421/Termux/actions/runs/$runId';
     
     var response = await http.get(
@@ -53,7 +53,7 @@ class GithubService {
     
     if (response.statusCode == 200) {
       var data = jsonDecode(response.body);
-      String status = data['status']; // queued, in_progress, completed
+      String status = data['status'];
       
       if(status == 'queued') updateProgress(10);
       else if(status == 'in_progress') updateProgress(50);
@@ -62,13 +62,14 @@ class GithubService {
   }
 }
 
-// ৪. AI কাস্টমাইজার ডায়ালগ উইজেট
+// --- UI ফিচারসমূহ (আগের মতোই থাকবে) ---
+
 void showAISuggestionDialog(BuildContext context, String fileName, Function(String) onPromptSelected) {
   showDialog(
     context: context,
     builder: (context) => AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      title: Row(
+      title: const Row(
         children: [
           Icon(Icons.auto_awesome, color: Colors.blue),
           SizedBox(width: 10),
