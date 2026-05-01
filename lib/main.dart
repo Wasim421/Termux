@@ -6,6 +6,11 @@ class GithubService {
   final String _token = "tokn BdWaSIm@428";
 
   Future<void> sendBuildRequest({
+    headers: {
+  'Authorization': 'token ghp_আপনার_টোকেন_এখানে_বসবে', 
+  'Accept': 'application/vnd.github.v3+json',
+},
+    
     required String prompt,
     required String packageName,
     required String fileName,
