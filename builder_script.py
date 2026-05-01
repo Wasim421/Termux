@@ -1,5 +1,45 @@
 import sys
 import os
+
+def generate_flutter_code(prompt, file_name):
+    # GIF বা সাধারণ ইমেজের জন্য ডাইনামিক উইজেট লজিক
+    if file_name.endswith('.gif'):
+        # GIF এর জন্য চলমান কোড
+        asset_widget = f"Image.asset('assets/{file_name}', repeat: ImageRepeat.repeat, fit: BoxFit.cover)"
+    else:
+        # সাধারণ ইমেজের জন্য কোড
+        asset_widget = f"Image.asset('assets/{file_name}', fit: BoxFit.contain)"
+
+    # এবার এই 'asset_widget' টি আপনার মূল ডার্ট কোডে ইনজেক্ট হবে
+    dart_code = f"""
+import 'package:flutter/material.dart';
+
+void main() => runApp(MyApp());
+
+class MyApp extends StatelessWidget {{
+  @override
+  Widget build(BuildContext context) {{
+    return MaterialApp(
+      home: Scaffold(
+        appBar: AppBar(title: Text('AI GIF Builder')),
+        body: Center(
+          child: Container(
+            child: {asset_widget}, // এখানে অটোমেটিক GIF বা ইমেজ বসে যাবে
+          ),
+        ),
+      ),
+    );
+  }}
+}}
+"""
+    with open(f"lib/main.dart", "w") as f:
+        f.write(dart_code)
+
+if __name__ == "__main__":
+    user_prompt = sys.argv[1]
+    app_file_name = sys.argv[2]
+    generate_flutter_code(user_prompt, app_file_name)
+    
 def handle_customization(prompt, image_name):
     if "background" in prompt:
         return f"Stack(children: [Image.asset('assets/{image_name}', fit: BoxFit.cover, width: double.infinity, height: double.infinity), Container(color: Colors.black.withOpacity(0.4))])"
