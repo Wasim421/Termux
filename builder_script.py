@@ -1,5 +1,34 @@
 import sys
 import os
+def generate_asset_widget(file_name, prompt):
+    # GIF হলে এনিমেশন লজিক
+    if file_name.endswith('.gif'):
+        return f"""
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            image: DecorationImage(
+              image: AssetImage('assets/{file_name}'),
+              fit: BoxFit.cover,
+            ),
+          ),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5), // মনের মতো গ্লাস ইফেক্ট
+            child: Container(color: Colors.black.withOpacity(0.1)),
+          ),
+        )"""
+
+    # ইমেজ এবং স্মার্ট শেপ ক্রপার (Prompt অনুযায়ী)
+    radius = "0"
+    if "round" in prompt.lower(): radius = "50"
+    elif "button" in prompt.lower(): radius = "15"
+
+    return f"""
+    ClipRRect(
+      borderRadius: BorderRadius.circular({radius}),
+      child: Image.asset('assets/{file_name}', fit: BoxFit.contain),
+    )"""
+    
 from PIL import Image
 import collections
 def generate_ai_widget(image_name, prompt_type):
