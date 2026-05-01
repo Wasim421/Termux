@@ -4,7 +4,21 @@ def targetSdkVersion = 35 // বর্তমানে এটি অ্যান�
 
 android {
     compileSdkVersion targetSdkVersion 
-
+     signingConfigs {
+    release {
+        storeFile file("upload-keystore.jks")
+        storePassword System.getenv("STORE_PASSWORD")
+        keyAlias System.getenv("KEY_ALIAS")
+        keyPassword System.getenv("KEY_PASSWORD")
+    }
+}
+buildTypes {
+    release {
+        signingConfig signingConfigs.release
+    }
+}
+    
+    
     defaultConfig {
         applicationId "com.wasim.ai_apk_builder"
         minSdkVersion 31 // Android 12 (SDK 31) থেকে শুরু
