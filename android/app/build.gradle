@@ -1,6 +1,3 @@
-def targetSdkVersion = 35 // বর্তমানে এটি অ্যান্ড্রয়েড ১৫ (SDK 35) পর্যন্ত আপডেট রাখা ভালো
-// তবে ফিউচার সাপোর্ট (১৬, ১৭) এর জন্য যখন Flutter আপডেট হবে, 
-// তখন এই ভ্যালুটি কেবল বাড়িয়ে দিলেই হবে।
 
 android {
     compileSdkVersion targetSdkVersion 
@@ -10,6 +7,12 @@ android {
         storePassword System.getenv("STORE_PASSWORD")
         keyAlias System.getenv("KEY_ALIAS")
         keyPassword System.getenv("KEY_PASSWORD")
+        buildTypes {
+    release {
+        signingConfig signingConfigs.release
+    }
+}
+    
     }
 }
 buildTypes {
