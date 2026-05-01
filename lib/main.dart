@@ -15,35 +15,39 @@ class GithubService {
     required String packageName,
     required String fileName,
   }) async {
-    final url = Uri.parse('https://api.github.com/repos/Wasim421/Termux/dispatches');
+    
+// আপনার অ্যাপের সেই ফাংশন যা বাটন ক্লিক করলে কাজ করে
+Future<void> buildMyApk() async {
+  
+  // ১. ঠিক এই লাইনে আপনার Repo URL টি বসিয়ে দিন
+  final String repoUrl = 'https://api.github.com/repos/Wasim421/Termux/dispatches';
 
-    final response = await http.post(
-      url,
+  // ২. আপনার টোকেন (আগে যা আলোচনা করেছি)
+  final String token = "ghp_আপনার_আসল_টোকেন"; 
+
+  try {
+    var response = await http.post(
+      Uri.parse(repoUrl), // এখানে অটোমেটিক URL টি চলে আসবে
       headers: {
-        'Authorization': 'token $_token', // আপনার টোকেনটি এখানে কাজ করবে
+        'Authorization': 'token $token',
         'Accept': 'application/vnd.github.v3+json',
-        'Content-Type': 'application/json',
       },
       body: jsonEncode({
         "event_type": "build-event",
         "client_payload": {
-          "prompt": prompt,
-          "package_name": packageName,
-          "target_sdk": "36",
-          "file_name": fileName,
+          "message": "Building my AI app"
         }
       }),
     );
 
     if (response.statusCode == 204) {
-      print("✅ সফলভাবে বিল্ড শুরু হয়েছে!");
-    } else {
-      print("❌ ভুল হয়েছে: ${response.body}");
+      print("বিল্ড শুরু হয়েছে!");
     }
+  } catch (e) {
+    print("Error: $e");
   }
 }
-
-
+    
 void _showAISuggestionDialog(BuildContext context, String fileName) {
   showDialog(
     context: context,
