@@ -1,5 +1,57 @@
 import sys
 import os
+def best_ai_coder(prompt, file_name):
+    # AI logic ja best flutter code generate korbe
+    is_gif = file_name.endswith('.gif')
+    
+    # Advanced AI-generated template
+    code = f"""
+import 'package:flutter/material.dart';
+import 'dart:ui'; // Glassmorphism er jonno
+
+void main() => runApp(MaterialApp(
+  debugShowCheckedModeBanner: false,
+  theme: ThemeData(useMaterial3: true, brightness: Brightness.dark),
+  home: MyAIApp(),
+));
+
+class MyAIApp extends StatelessWidget {{
+  @override
+  Widget build(BuildContext context) {{
+    return Scaffold(
+      body: Stack(
+        children: [
+          // Background (GIF thakle choloman, nahole image)
+          Positioned.fill(
+            child: {f"Image.asset('assets/{file_name}', fit: BoxFit.cover, repeat: ImageRepeat.repeat)" if is_gif else "Container(color: Colors.black)"},
+          ),
+          // Glassmorphism Overlay
+          Center(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(
+                padding: EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.white.withOpacity(0.2)),
+                ),
+                child: Text(
+                  "{prompt}",
+                  style: TextStyle(color: Colors.white, fontSize: 18),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }}
+}}
+"""
+    return code
+
 
 def generate_flutter_code(prompt, file_name):
     # GIF বা সাধারণ ইমেজের জন্য ডাইনামিক উইজেট লজিক
