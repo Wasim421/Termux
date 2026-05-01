@@ -9,7 +9,15 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-
+      - name: Build APK
+        run: |
+          flutter build apk --release
+        env:
+          # GitHub Secrets থেকে পাসওয়ার্ডগুলো এখানে আসবে
+          STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          
       - name: Checkout Repository
         uses: actions/checkout@v4
 
