@@ -44,6 +44,16 @@ jobs:
           sed -i "s/compileSdkVersion [0-9]*/compileSdkVersion $TARGET_SDK/g" android/app/build.gradle
           sed -i "s/targetSdkVersion [0-9]*/targetSdkVersion $TARGET_SDK/g" android/app/build.gradle
 
+      - name: Register Assets Automatically
+        run: |
+          # assets ফোল্ডার না থাকলে তৈরি করবে
+          mkdir -p assets
+          # pubspec.yaml এ assets সেকশন না থাকলে অ্যাড করবে
+          if ! grep -q "assets:" pubspec.yaml; then
+            echo "  assets:" >> pubspec.yaml
+            echo "    - assets/" >> pubspec.yaml
+          fi
+
       - name: AI Code Injection
         run: |
           python3 builder_script.py "${{ github.event.client_payload.prompt }}"
