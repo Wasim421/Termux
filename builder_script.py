@@ -2,6 +2,26 @@ import sys
 import os
 from PIL import Image
 import collections
+def generate_ai_widget(image_name, prompt_type):
+    if "button" in prompt_type.lower():
+        return f"""
+        GestureDetector(
+          onTap: () => print('Button Tapped!'),
+          child: Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle, // প্রম্পট অনুযায়ী শেপ বদলাবে
+              image: DecorationImage(
+                image: AssetImage('assets/{image_name}'),
+                fit: BoxFit.cover,
+              ),
+            ),
+            width: 100, height: 100,
+          ),
+        )"""
+    elif "background" in prompt_type.lower():
+        return f"Image.asset('assets/{image_name}', fit: BoxFit.cover)"
+    # আরও কাস্টম উইজেট এখানে যোগ হবে
+
 
 def get_dominant_color(image_path):
     img = Image.open(image_path)
