@@ -1,0 +1,44 @@
+name: AI APK Builder Engine
+
+on:
+  repository_dispatch:
+    types: [build-event] # যখন আপনি অ্যাপ থেকে সিগন্যাল দেবেন তখন এটি চলবে
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.x'
+          channel: 'stable'
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: AI Code Injection
+        run: |
+          python3 builder_script.py "${{ github.event.client_payload.prompt }}"
+          # এটি আপনার প্রম্পট অনুযায়ী lib/main.dart আপডেট করবে
+
+      - name: Build APK (Android 12-17 Support)
+        run: |
+          flutter build apk --release \
+          --split-per-abi \
+          --target-platform android-arm64
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Generated-AI-APK
+          path: build/app/outputs/flutter-apk/app-release.apk
