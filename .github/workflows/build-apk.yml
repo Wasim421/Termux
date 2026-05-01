@@ -32,7 +32,17 @@ jobs:
           # AndroidManifest এবং build.gradle এ প্যাকেজ নাম পরিবর্তন
           sed -i "s/com.example.default/$NEW_PKG/g" android/app/build.gradle
           sed -i "s/com.example.default/$NEW_PKG/g" android/app/src/main/AndroidManifest.xml
-        
+      - name: SDK Auto-Bridge (Dynamic Update)
+        run: |
+          TARGET_SDK="${{ github.event.client_payload.target_sdk }}"
+          # Default value যদি কোনো SDK না পাঠানো হয় (ধরি ১৬ যা SDK 36)
+          if [ -z "$TARGET_SDK" ]; then TARGET_SDK="36"; fi
+          
+          echo "Updating SDK to Android Version: $TARGET_SDK"
+          
+          # build.gradle ফাইলে compileSdkVersion এবং targetSdkVersion পরিবর্তন
+          sed -i "s/compileSdkVersion [0-9]*/compileSdkVersion $TARGET_SDK/g" android/app/build.gradle
+          sed -i "s/targetSdkVersion [0-9]*/targetSdkVersion $TARGET_SDK/g" android/app/build.gradle
 
       - name: AI Code Injection
         run: |
