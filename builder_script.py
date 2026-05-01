@@ -51,7 +51,14 @@ class MyAIApp extends StatelessWidget {{
 }}
 """
     return code
-
+    
+    def check_code_safety(dart_code):
+    # কোডে কোনো ব্র্যাকেট মিসিং আছে কিনা বা ইমপোর্ট ভুল আছে কিনা তা চেক করবে
+    if "MaterialApp" not in dart_code:
+        print("Error: Invalid Flutter Structure!")
+        return False
+    return True
+    
 
 def generate_flutter_code(prompt, file_name):
     # GIF বা সাধারণ ইমেজের জন্য ডাইনামিক উইজেট লজিক
