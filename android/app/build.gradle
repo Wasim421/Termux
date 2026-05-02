@@ -1,7 +1,7 @@
 def targetSdkVersion = 35
 
 android {
-    namespace "com.wasim.ai_apk_builder"
+    namespace "com.wasim.ai.bd"
     compileSdkVersion 35
 
     signingConfigs {
@@ -15,7 +15,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.wasim.ai_apk_builder"
+        applicationId "com.wasim.ai.bd"
         minSdkVersion 31 // Android 12 সাপোর্ট
         targetSdkVersion targetSdkVersion
         versionCode 1
