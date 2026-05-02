@@ -2,7 +2,24 @@ dependencies:
   flutter:
     sdk: flutter
   http: ^1.1.0
+  cupertino_icons: ^1.0.2
   google_fonts: ^6.1.0        # স্টাইলিশ ফন্টের জন্য
   glassmorphism: ^3.0.0      # গ্লাস ইফেক্ট সহজ করতে
   flutter_animate: ^4.2.0    # স্মুথ অ্যানিমেশনের জন্য
-  
+  name: termux_ai_builder
+description: A new Flutter project.
+publish_to: 'none'
+
+# এই অংশটুকু অবশ্যই যোগ করুন
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/
+    
