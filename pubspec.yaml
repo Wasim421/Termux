@@ -1,3 +1,28 @@
+name: termux_app
+description: "AI APK Builder Project"
+version: 1.0.0+1
+
+# ১. এনভায়রনমেন্ট অংশ
+environment:
+  sdk: ^3.2.0
+  flutter: '>=3.22.0'
+
+# ২. ডিপেন্ডেন্সি অংশ (প্যাকেজগুলো এখানে থাকবে)
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.1.0
+  cupertino_icons: ^1.0.6
+  google_fonts: ^6.1.0
+  glassmorphism: ^3.0.0
+  flutter_animate: ^4.2.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+# ৩. ফ্লাটার স্পেসিফিক কনফিগারেশন (অ্যাসেটস এখানে থাকে)
 flutter:
   uses-material-design: true
   assets:
