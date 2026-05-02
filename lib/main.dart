@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 class GithubService {
   // আপনার রিপোজিটরি পাথ ঠিক আছে
-  final String repoUrl = 'https://api.github.com/repos/Wasim421/termux_app/dispatches';
+  final String repoUrl = 'https://api.github.com/repos/Wasim421/Termux/dispatches';
 
   Future<void> sendBuildRequest({
     required String token, 
@@ -44,7 +44,7 @@ class GithubService {
 
   // রান স্ট্যাটাস চেক করার ফাংশন
   Future<void> checkBuildStatus(String token, String runId, Function(int) updateProgress) async {
-    final statusUrl = 'https://api.github.com/repos/Wasim421/termux_app/actions/runs/$runId';
+    final statusUrl = 'https://api.github.com/repos/Wasim421/Termux/actions/runs/$runId';
     
     try {
       var response = await http.get(
