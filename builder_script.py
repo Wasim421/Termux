@@ -11,7 +11,7 @@ if not api_key:
     sys.exit(1)
 
 genai.configure(api_key=api_key)
-model = genai.GenerativeModel('gemini-1.5-pro')
+model = genai.GenerativeModel('gemini-1.5-flash')
 
 def get_dominant_color(image_path):
     """ইমেজ থেকে ডমিন্যান্ট কালার বের করে হেক্স কোড রিটার্ন করবে"""
