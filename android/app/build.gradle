@@ -8,7 +8,7 @@ android {
         release {
             // Termux থেকে আপলোড করা কি-স্টোর ফাইল
             storeFile file("upload-keystore.jks")
-            storePassword System.getenv("STORE_PASSWORD")
+            storePassword System.getenv("KEYSTORE_PASSWORD")
             keyAlias System.getenv("KEY_ALIAS")
             keyPassword System.getenv("KEY_PASSWORD")
         }
