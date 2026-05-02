@@ -1,25 +1,34 @@
+name: ai_builder_app
+description: "AI APK Builder Project - Full Version"
+publish_to: 'none'
+
+# SDK ভার্সন ফিক্স করা হয়েছে যা গিটহাবের এরর দূর করবে
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
 dependencies:
   flutter:
     sdk: flutter
+  
+  # নেটওয়ার্ক এবং আইকনের জন্য
   http: ^1.1.0
-  cupertino_icons: ^1.0.2
-  google_fonts: ^6.1.0        # স্টাইলিশ ফন্টের জন্য
-  glassmorphism: ^3.0.0      # গ্লাস ইফেক্ট সহজ করতে
-  flutter_animate: ^4.2.0    # স্মুথ অ্যানিমেশনের জন্য
-  name: termux_ai_builder
-description: A new Flutter project.
-publish_to: 'none'
-
-# এই অংশটুকু অবশ্যই যোগ করুন
-environment:
-  sdk: '>=3.0.0 <4.0.0'
+  cupertino_icons: ^1.0.6
+  
+  # স্টাইলিশ ইউআই এবং অ্যানিমেশনের জন্য (সবগুলো ফিচার রাখা হয়েছে)
+  google_fonts: ^6.1.0
+  glassmorphism: ^3.0.0
+  flutter_animate: ^4.2.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_lints: ^3.0.0
 
 flutter:
   uses-material-design: true
+  
+  # এসেট ফোল্ডার এবং ব্যাকগ্রাউন্ড ইমেজ রেজিস্টার করা
   assets:
     - assets/
+    - assets/background.png
     
