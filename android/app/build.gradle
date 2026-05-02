@@ -1,3 +1,9 @@
+plugins {
+    id "com.android.application"
+    id "kotlin-android"
+    id "dev.flutter.flutter-gradle-plugin"
+}
+
 def targetSdkVersion = 35
 
 android {
@@ -6,8 +12,8 @@ android {
 
     signingConfigs {
         release {
-            // Termux থেকে আপলোড করা কি-স্টোর ফাইল
             storeFile file("upload-keystore.jks")
+            // এখানে System.getenv ব্যবহার করা হয়েছে যা GitHub Actions এর জন্য সঠিক
             storePassword System.getenv("KEYSTORE_PASSWORD")
             keyAlias System.getenv("KEY_ALIAS")
             keyPassword System.getenv("KEY_PASSWORD")
@@ -16,25 +22,20 @@ android {
 
     defaultConfig {
         applicationId "com.wasim.ai.bd"
-        minSdkVersion 31 // Android 12 সাপোর্ট
+        minSdkVersion 31 
         targetSdkVersion targetSdkVersion
         versionCode 1
         versionName "1.0"
-
         multiDexEnabled true
     }
 
     buildTypes {
         release {
-            // রিলিজের জন্য আপনার আসল সাইনিং কনফিগ ব্যবহার হবে
             signingConfig signingConfigs.release
-            
-            // কোড সুরক্ষিত ও সাইজ ছোট করার জন্য অপ্টিমাইজেশন
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
-        
         debug {
             signingConfig signingConfigs.release
         }
