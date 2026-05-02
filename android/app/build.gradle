@@ -37,10 +37,17 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
         debug {
-            signingConfig signingConfigs.release
-        }
+            
+            signingConfigs {
+    release {
+        // নিশ্চিত করুন যে ফাইলের নাম 'upload-keystore.jks' ই আছে
+        storeFile file("upload-keystore.jks") 
+        storePassword System.getenv("KEYSTORE_PASSWORD")
+        keyAlias System.getenv("KEY_ALIAS")
+        keyPassword System.getenv("KEY_PASSWORD")
     }
-
+            }
+        
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
