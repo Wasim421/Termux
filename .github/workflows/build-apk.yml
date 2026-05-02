@@ -1,7 +1,7 @@
 name: AI APK Builder Engine
 
 on: 
-  pus
+  push:
     branches:
         - main
   repository_dispatch:
@@ -68,28 +68,31 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
-      # ৮. ফ্লাটার ক্লিন, আপগ্রেড এবং এম্বেডিং মাইগ্রেশন (Feature এবং Stability দুটোই থাকবে)
+      # ৮. ফ্লাটার ক্লিন এবং এনভায়রনমেন্ট তৈরি
       - name: Migrate and Install Dependencies
         run: |
           flutter clean
-          # পুরনো এম্বেডিং রিলেটেড ক্যাশ ফাইল মুছে ফেলা
           rm -rf android/app/src/main/java/io/flutter/plugins/
-          # প্রোজেক্ট মাইগ্রেশন কমান্ড (v1 to v2 ফিক্স করবে)
           flutter create . --platforms android
           flutter pub get
 
-      # ৯. ফাইনাল APK বিল্ড (Keystore এনভায়রনমেন্টসহ)
+      # ৯. Base64 থেকে JKS ফাইল জেনারেট করা (আপনার অনুরোধ অনুযায়ী যোগ করা হয়েছে)
+      - name: Decode Keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
+
+      # ১০. ফাইনাল APK বিল্ড (Keystore এনভায়রনমেন্টসহ)
       - name: Build APK (Release)
         run: |
           flutter build apk --release \
           --split-per-abi \
           --target-platform android-arm64
         env:
-          STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
 
-      # ১০. তৈরি হওয়া APK ফাইলটি আপলোড করা
+      # ১১. তৈরি হওয়া APK ফাইলটি আপলোড করা
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
