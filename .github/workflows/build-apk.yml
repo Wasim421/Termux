@@ -38,7 +38,6 @@ jobs:
       # ৫. প্যাকেজ নাম এবং SDK ডাইনামিকালি পরিবর্তন
       - name: Update Package and SDK
         run: |
-          # যদি পে-লোড থেকে নাম না আসে তবে আপনার ডিফল্ট com.wasim.ai_bd ব্যবহার হবে
           NEW_PKG="${{ github.event.client_payload.package_name }}"
           if [ -z "$NEW_PKG" ]; then NEW_PKG="com.wasim.ai_bd"; fi
           
@@ -46,7 +45,6 @@ jobs:
           if [ -z "$TARGET_SDK" ]; then TARGET_SDK="35"; fi
           
           echo "Updating to Package: $NEW_PKG and SDK: $TARGET_SDK"
-          # সব ফাইলে প্যাকেজ নাম ও SDK ভার্সন রিপ্লেস করা
           sed -i "s/com.example.default/$NEW_PKG/g" android/app/build.gradle
           sed -i "s/com.example.default/$NEW_PKG/g" android/app/src/main/AndroidManifest.xml
           sed -i "s/compileSdkVersion [0-9]*/compileSdkVersion $TARGET_SDK/g" android/app/build.gradle
@@ -70,10 +68,14 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
-      # ৮. ফ্লাটার ক্লিন ও গেট (v1 embedding এরর ফিক্স করতে এটি জরুরি)
-      - name: Clean and Install Dependencies
+      # ৮. ফ্লাটার ক্লিন, আপগ্রেড এবং এম্বেডিং মাইগ্রেশন (Feature এবং Stability দুটোই থাকবে)
+      - name: Migrate and Install Dependencies
         run: |
           flutter clean
+          # পুরনো এম্বেডিং রিলেটেড ক্যাশ ফাইল মুছে ফেলা
+          rm -rf android/app/src/main/java/io/flutter/plugins/
+          # প্রোজেক্ট মাইগ্রেশন কমান্ড (v1 to v2 ফিক্স করবে)
+          flutter create . --platforms android
           flutter pub get
 
       # ৯. ফাইনাল APK বিল্ড (Keystore এনভায়রনমেন্টসহ)
