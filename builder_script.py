@@ -13,7 +13,7 @@ if not api_key:
 genai.configure(api_key=api_key)
 
 # সব ভার্সনে কাজ করার জন্য মডেল নাম 'gemini-1.5-flash' রাখা হয়েছে
-model = genai.GenerativeModel('gemini-1.5-flash')
+model = genai.GenerativeModel('gemini-pro')
 
 def get_dominant_color(image_path):
     """ছবি থেকে কালার বের করবে, না পেলে ডিফল্ট পার্পল দিবে"""
