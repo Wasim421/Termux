@@ -1,7 +1,7 @@
 name: AI APK Builder Engine
 
 on: 
-  push:
+  pus
     branches:
         - main
   repository_dispatch:
