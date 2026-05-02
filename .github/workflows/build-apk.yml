@@ -1,4 +1,4 @@
-name: : AI APK Builder Engine
+name: AI APK Builder Engine
 
 on: 
   push:
