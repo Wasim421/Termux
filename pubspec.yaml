@@ -1,5 +1,5 @@
 flutter:
   uses-material-design: true
   assets:
-    - assets/  # এটি দিলে ওই ফোল্ডারের সব ফাইল অটো পেয়ে যাবে
+    - assets/
     
