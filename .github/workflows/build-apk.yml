@@ -73,7 +73,7 @@ jobs:
         run: |
           flutter clean
           rm -rf android/app/src/main/java/io/flutter/plugins/
-          flutter create . --platforms android
+          
           flutter pub get
 
       # ৯. Base64 থেকে JKS ফাইল জেনারেট করা (আপনার অনুরোধ অনুযায়ী যোগ করা হয়েছে)
