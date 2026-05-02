@@ -1,14 +1,13 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
-// আপনি চাইলে shared_preferences ব্যবহার করে টোকেন সেভ রাখতে পারেন
 
 class GithubService {
-  final String repoUrl = 'https://api.github.com/repos/Wasim421/Termux/dispatches';
+  // আপনার রিপোজিটরি পাথ ঠিক আছে
+  final String repoUrl = 'https://api.github.com/repos/Wasim421/termux_app/dispatches';
 
-  // টোকেনটি এখন আর্গুমেন্ট হিসেবে আসবে অথবা স্টোরেজ থেকে রিড করবে
   Future<void> sendBuildRequest({
-    required String token, // ইউজার ইনপুট থেকে আসবে
+    required String token, 
     required String prompt,
     required String packageName,
     required String assetName,
@@ -17,7 +16,7 @@ class GithubService {
       final response = await http.post(
         Uri.parse(repoUrl),
         headers: {
-          'Authorization': 'token $token',
+          'Authorization': 'Bearer $token', // 'token $token' এর বদলে 'Bearer $token' বেশি স্ট্যান্ডার্ড
           'Accept': 'application/vnd.github.v3+json',
           'Content-Type': 'application/json',
         },
@@ -32,45 +31,59 @@ class GithubService {
         }),
       );
 
+      // GitHub Dispatch সফল হলে ২০৪ স্ট্যাটাস কোড দেয়
       if (response.statusCode == 204) {
-        print("✅ বিল্ড রিকোয়েস্ট সফল!");
+        print("✅ বিল্ড রিকোয়েস্ট সফলভাবে পাঠানো হয়েছে!");
       } else {
-        print("❌ এরর: ${response.statusCode}");
+        print("❌ এরর: ${response.statusCode} - ${response.body}");
       }
     } catch (e) {
       print("❌ নেটওয়ার্ক এরর: $e");
     }
   }
 
-  // রান আইডি দিয়ে স্ট্যাটাস চেক
+  // রান স্ট্যাটাস চেক করার ফাংশন
   Future<void> checkBuildStatus(String token, String runId, Function(int) updateProgress) async {
-    final statusUrl = 'https://api.github.com/repos/Wasim421/Termux/actions/runs/$runId';
+    final statusUrl = 'https://api.github.com/repos/Wasim421/termux_app/actions/runs/$runId';
     
-    var response = await http.get(
-      Uri.parse(statusUrl),
-      headers: {'Authorization': 'token $token'},
-    );
-    
-    if (response.statusCode == 200) {
-      var data = jsonDecode(response.body);
-      String status = data['status'];
+    try {
+      var response = await http.get(
+        Uri.parse(statusUrl),
+        headers: {'Authorization': 'Bearer $token'},
+      );
       
-      if(status == 'queued') updateProgress(10);
-      else if(status == 'in_progress') updateProgress(50);
-      else if(status == 'completed') updateProgress(100);
+      if (response.statusCode == 200) {
+        var data = jsonDecode(response.body);
+        String status = data['status'];
+        String conclusion = data['conclusion'] ?? "";
+        
+        if (status == 'queued') {
+          updateProgress(10);
+        } else if (status == 'in_progress') {
+          updateProgress(50);
+        } else if (status == 'completed') {
+          if (conclusion == 'success') {
+            updateProgress(100);
+          } else {
+            print("❌ বিল্ড ফেল করেছে।");
+          }
+        }
+      }
+    } catch (e) {
+      print("❌ স্ট্যাটাস চেক এরর: $e");
     }
   }
 }
 
-// --- UI ফিচারসমূহ (আগের মতোই থাকবে) ---
+// --- UI Helper Function ---
 
 void showAISuggestionDialog(BuildContext context, String fileName, Function(String) onPromptSelected) {
   showDialog(
     context: context,
     builder: (context) => AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      title: const Row(
-        children: [
+      title: Row(
+        children: const [
           Icon(Icons.auto_awesome, color: Colors.blue),
           SizedBox(width: 10),
           Text("AI Customizer ✨"),
@@ -78,16 +91,16 @@ void showAISuggestionDialog(BuildContext context, String fileName, Function(Stri
       ),
       content: Text("আপনি '$fileName' দিয়ে কী তৈরি করতে চান?"),
       actions: [
-        _buildDialogOption(context, "বাটন", Icons.smart_button, () {
+        _buildDialogOption(context, "বাটন (Button)", Icons.smart_button, () {
            onPromptSelected("Convert $fileName into a stylish button with glass effect and ripple animation");
         }),
-        _buildDialogOption(context, "ব্যাকগ্রাউন্ড", Icons.wallpaper, () {
+        _buildDialogOption(context, "ব্যাকগ্রাউন্ড (Background)", Icons.wallpaper, () {
            onPromptSelected("Set $fileName as the full-screen background with slight blur and dark overlay");
         }),
-        _buildDialogOption(context, "স্প্ল্যাশ স্ক্রিন", Icons.flash_on, () {
+        _buildDialogOption(context, "স্প্ল্যাশ স্ক্রিন (Splash)", Icons.flash_on, () {
            onPromptSelected("Create a splash screen using $fileName centered with a fade-in animation");
         }),
-        _buildDialogOption(context, "অ্যাপ লোগো", Icons.category, () {
+        _buildDialogOption(context, "অ্যাপ লোগো (Logo)", Icons.category, () {
            onPromptSelected("Place $fileName as the top-center logo with a nice shadow effect");
         }),
       ],
@@ -101,7 +114,7 @@ Widget _buildDialogOption(BuildContext context, String label, IconData icon, Voi
     title: Text(label),
     onTap: () {
       action();
-      Navigator.pop(context);
+      Navigator.pop(context); // ডায়ালগ বন্ধ করা
     },
   );
 }
