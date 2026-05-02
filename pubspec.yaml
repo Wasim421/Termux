@@ -1,27 +1,5 @@
-name: ai_builder_app
-description: "AI APK Builder Project"
-publish_to: 'none'
-
-environment:
-  sdk: '>=3.0.0 <4.0.0'
-
-dependencies:
-  flutter:
-    sdk: flutter
-  http: ^1.1.0
-  cupertino_icons: ^1.0.6
-  google_fonts: ^6.1.0
-  glassmorphism: ^3.0.0
-  flutter_animate: ^4.2.0
-
-dev_dependencies:
-  flutter_test:
-    sdk: flutter
-  flutter_lints: ^3.0.0
-
 flutter:
   uses-material-design: true
   assets:
-    - assets/
-    - assets/background.png
-
+    - assets/  # এটি দিলে ওই ফোল্ডারের সব ফাইল অটো পেয়ে যাবে
+    
