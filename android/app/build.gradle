@@ -7,13 +7,12 @@ plugins {
 def targetSdkVersion = 35
 
 android {
-    namespace "com.wasim.ai.bd"
+    namespace "com.wasim.ai_bd" // প্যাকেজ নাম আপনার AndroidManifest এর সাথে মিল থাকতে হবে
     compileSdkVersion 35
 
     signingConfigs {
         release {
             storeFile file("upload-keystore.jks")
-            // এখানে System.getenv ব্যবহার করা হয়েছে যা GitHub Actions এর জন্য সঠিক
             storePassword System.getenv("KEYSTORE_PASSWORD")
             keyAlias System.getenv("KEY_ALIAS")
             keyPassword System.getenv("KEY_PASSWORD")
@@ -21,7 +20,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.wasim.ai.bd"
+        applicationId "com.wasim.ai_bd"
         minSdkVersion 31 
         targetSdkVersion targetSdkVersion
         versionCode 1
@@ -37,17 +36,10 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
         debug {
-            
-            signingConfigs {
-    release {
-        // নিশ্চিত করুন যে ফাইলের নাম 'upload-keystore.jks' ই আছে
-        storeFile file("upload-keystore.jks") 
-        storePassword System.getenv("KEYSTORE_PASSWORD")
-        keyAlias System.getenv("KEY_ALIAS")
-        keyPassword System.getenv("KEY_PASSWORD")
+            signingConfig signingConfigs.release
+        }
     }
-            }
-        
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
