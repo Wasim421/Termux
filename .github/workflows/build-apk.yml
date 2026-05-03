@@ -69,20 +69,19 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
-            # ৮. ফ্লাটার ক্লিন এবং v2 এম্বেডিং নিশ্চিত করা
-      - name: Install Dependencies and Fix Embedding
+                  # ৮. গ্র্যাডল ফাইল জেনারেট এবং ডিপেন্ডেন্সি ইনস্টল
+      - name: Install Dependencies and Generate Gradle
         run: |
-          flutter clean
-          # পুরনো v1 প্লাগিন ফাইলগুলো থাকলে মুছে ফেলা
-          rm -rf android/app/src/main/java/io/flutter/plugins/
+          # প্রথমে ফ্লাটার প্রোজেক্ট রি-ক্রিয়েট করা (এটি gradlew ফাইল তৈরি করবে)
+          flutter create . --platforms android
           
-          # pubspec অনুযায়ী ডিপেন্ডেন্সি নামানো
+          # এবার ক্লিন এবং ডিপেন্ডেন্সি ম্যানেজমেন্ট
+          flutter clean
+          rm -rf android/app/src/main/java/io/flutter/plugins/
           flutter pub get
           
-          # অনেক সময় ক্যাশে থাকা পুরনো কনফিগ এরর দেয়, তাই এটি নিশ্চিত করা
-          cd android
-          ./gradlew clean
-          cd ..
+          # গ্র্যাডল ফাইলকে এক্সিকিউট করার পারমিশন দেওয়া
+          chmod +x android/gradlew
           
 
       # ৯. Base64 থেকে JKS ফাইল জেনারেট করা (Path নিশ্চিত করা হয়েছে)
