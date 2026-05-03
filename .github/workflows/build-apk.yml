@@ -35,18 +35,19 @@ jobs:
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-            # ৫. প্যাকেজ নাম এবং SDK ডাইনামিকালি পরিবর্তন
+      # ৫. প্যাকেজ নাম এবং SDK ডাইনামিকালি পরিবর্তন
       - name: Update Package and SDK
         run: |
           NEW_PKG="${{ github.event.client_payload.package_name }}"
           if [ -z "$NEW_PKG" ]; then NEW_PKG="com.wasim.ai_bd"; fi
           TARGET_SDK="35"
           
-          # সাধারণ এবং KTS উভয় ফাইলের জন্যই আপডেট চালানো
-          find android/ -name "build.gradle*" -exec sed -i "s/applicationId \".*\"/applicationId \"$NEW_PKG\"/g" {} +
-          find android/ -name "build.gradle*" -exec sed -i "s/compileSdkVersion [0-9]*/compileSdkVersion $TARGET_SDK/g" {} +
-          find android/ -name "build.gradle*" -exec sed -i "s/targetSdkVersion [0-9]*/targetSdkVersion $TARGET_SDK/g" {} +
-          find android/ -name "build.gradle*" -exec sed -i "s/namespace = \".*\"/namespace = \"$NEW_PKG\"/g" {} +
+          echo "Updating to Package: $NEW_PKG and SDK: $TARGET_SDK"
+          # সাধারণ (.gradle) এবং Kotlin Script (.kts) উভয় ফাইলের জন্যই আপডেট চালানো
+          find android/ -name "build.gradle*" -exec sed -i "s/applicationId \".*\"/applicationId \"$NEW_PKG\"/g" {} + || true
+          find android/ -name "build.gradle*" -exec sed -i "s/compileSdkVersion [0-9]*/compileSdkVersion $TARGET_SDK/g" {} + || true
+          find android/ -name "build.gradle*" -exec sed -i "s/targetSdkVersion [0-9]*/targetSdkVersion $TARGET_SDK/g" {} + || true
+          find android/ -name "build.gradle*" -exec sed -i "s/namespace = \".*\"/namespace = \"$NEW_PKG\"/g" {} + || true
           
       # ৬. অ্যাসেটস অটো-রেজিস্ট্রেশন
       - name: Register Assets
@@ -66,10 +67,10 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
-            # ৮. গ্র্যাডল ফাইল এবং প্রোপার্টিজ জেনারেট করা
+      # ৮. গ্র্যাডল ফাইল এবং প্রোপার্টিজ জেনারেট করা
       - name: Generate Essential Android Files
         run: |
-          # অ্যান্ড্রয়েড স্ট্রাকচার তৈরি (পুরনো ফরম্যাটে)
+          # অ্যান্ড্রয়েড স্ট্রাকচার তৈরি
           flutter create . --platforms android
           
           # Gradle Wrapper এবং Properties ম্যানুয়ালি ফিক্স করা
@@ -89,9 +90,9 @@ jobs:
           android.suppressBuildResourcesInAppChecks=true
           EOT
           
+          flutter clean
           flutter pub get
           chmod +x android/gradlew
-          
 
       # ৯. Base64 থেকে JKS ফাইল জেনারেট করা
       - name: Decode Keystore
@@ -99,14 +100,14 @@ jobs:
           mkdir -p android/app
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
 
-          - name: Build APK (Release)
+      # ১০. ফাইনাল APK বিল্ড (মার্জ করা এবং ইন্ডেন্টেশন ফিক্সড)
+      - name: Build APK (Release)
         run: |
           flutter build apk --release \
           --split-per-abi \
           --target-platform android-arm64 \
           --no-pub \
           --android-skip-build-dependency-validation
-          
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
