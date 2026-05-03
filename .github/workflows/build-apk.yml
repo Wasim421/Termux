@@ -35,7 +35,7 @@ jobs:
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-                # ৫. প্যাকেজ নাম এবং SDK ডাইনামিকালি পরিবর্তন (অ্যাকুরেট ফিক্স)
+                      # ৫. প্যাকেজ নাম এবং SDK ডাইনামিকালি পরিবর্তন (অ্যাকুরেট ফিক্স)
       - name: Update Package and SDK
         run: |
           NEW_PKG="${{ github.event.client_payload.package_name }}"
@@ -45,13 +45,12 @@ jobs:
           echo "Updating to Package: $NEW_PKG and SDK: $TARGET_SDK"
           
           # build.gradle ফাইলের ভেতরের ভুল লাইনগুলো একদম ক্লিন করে নতুন করে লেখা
-          # এটি 'targetSdkVersion 35= 35' এর মতো ভুলগুলোকেও মুছে ফেলবে
-          find android/ -name "build.gradle*" -exec sed -i "s/def targetSdkVersion.*/def targetSdkVersion = $TARGET_SDK/g" {} + || true
-          find android/ -name "build.gradle*" -exec sed -i "s/targetSdkVersion [0-9]*/targetSdkVersion $TARGET_SDK/g" {} + || true
-          find android/ -name "build.gradle*" -exec sed -i "s/compileSdkVersion [0-9]*/compileSdkVersion $TARGET_SDK/g" {} + || true
+          # এটি 'targetSdkVersion 35= 35' এর মতো ভুলগুলোকেও পুরোপুরি মুছে ফেলবে
+          find android/ -name "build.gradle*" -exec sed -i "s/.*targetSdkVersion.*/def targetSdkVersion = $TARGET_SDK/g" {} + || true
+          find android/ -name "build.gradle*" -exec sed -i "s/.*compileSdkVersion.*/compileSdkVersion = $TARGET_SDK/g" {} + || true
           find android/ -name "build.gradle*" -exec sed -i "s/applicationId \".*\"/applicationId \"$NEW_PKG\"/g" {} + || true
           find android/ -name "build.gradle*" -exec sed -i "s/namespace = \".*\"/namespace = \"$NEW_PKG\"/g" {} + || true
-          
+
           
           
       # ৬. অ্যাসেটস অটো-রেজিস্ট্রেশন
