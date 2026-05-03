@@ -5,21 +5,20 @@ import collections
 from PIL import Image
 import warnings
 
-# অপ্রয়োজনীয় ওয়ার্নিং বন্ধ রাখা
+# ১. সেটিংস ও ওয়ার্নিং বন্ধ রাখা
 warnings.filterwarnings("ignore")
 
-# ১. API কনফিগারেশন
+# ২. API কনফিগারেশন
 api_key = os.getenv("GEMINI_API_KEY")
 if not api_key:
     print("❌ Error: GEMINI_API_KEY not found!")
     sys.exit(1)
 
-genai.configure(api_key=api_key)
-
-# ২. মডেল সেটিংস (একদম ডিফল্ট পদ্ধতি)
-model = genai.GenerativeModel('gemini-1.5-flash')
+# ৩. লাইব্রেরি কনফিগারেশন - সরাসরি v1 ভার্সন নিশ্চিত করা
+genai.configure(api_key=api_key, transport='rest') # REST ব্যবহার করলে ভার্সন কন্ট্রোল সহজ হয়
 
 def get_dominant_color(image_path):
+    """ইমেজ থেকে থিম কালার এক্সট্রাকশন"""
     try:
         if not os.path.isfile(image_path):
             return '#1A1A1A'
@@ -45,15 +44,23 @@ def generate_ai_app(prompt, asset_name):
     - Primary Color: {hex_color}.
     - Background: 'assets/{asset_name}' with Glassmorphism (BackdropFilter).
     - Requirements: "{prompt}".
-    - RULES: Return ONLY the code. No markdown backticks (```).
+    - RULES: Return ONLY raw Dart code. NO markdown formatting.
     """
 
     try:
-        # কোনো বাড়তি RequestOptions ছাড়া সরাসরি কল
+        # এখানে সরাসরি v1 এন্ডপয়েন্ট কল করার জন্য GenerativeModel ডিফাইন করা
+        # 'models/' প্রিফিক্স ছাড়া শুধু নাম ব্যবহার করলে v1 কল হওয়ার সম্ভাবনা বেশি থাকে
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        
+        # জেনারেশন কল
         response = model.generate_content(system_prompt)
+        
+        if not response.text:
+            raise ValueError("Empty response from Gemini")
+            
         code = response.text.strip()
         
-        # যদি তবুও ব্যাকটিক দিয়ে দেয় তবে তা ক্লিন করা
+        # ব্যাকটিক ক্লিনআপ (যদি ভুল করে দিয়ে ফেলে)
         if "```" in code:
             parts = code.split("```")
             for part in parts:
@@ -64,18 +71,17 @@ def generate_ai_app(prompt, asset_name):
         
     except Exception as e:
         print(f"❌ Gemini Error: {e}")
-        # ব্যাকআপ কোড যেন বিল্ড ফেইল না করে
-        return "import 'package:flutter/material.dart'; void main() => runApp(MaterialApp(home: Scaffold(body: Center(child: Text('AI Build Error')))));"
+        # যদি ৪.৪ এরর তবুও আসে, তবে gemini-1.0-pro ট্রাই করার অপশন রাখা যেতে পারে
+        return f"import 'package:flutter/material.dart'; void main() => runApp(MaterialApp(home: Scaffold(body: Center(child: Text('Error: {str(e)[:50]}')))));"
 
 if __name__ == "__main__":
     user_prompt = sys.argv[1] if len(sys.argv) > 1 else "Modern Reader UI"
     asset_file = sys.argv[2] if len(sys.argv) > 2 else "background.png"
     
-    print(f"🛠️ Building with Gemini AI...")
+    print(f"🛠️ Starting AI Build Engine (Targeting v1 Stable)...")
     final_dart_code = generate_ai_app(user_prompt, os.path.basename(asset_file))
     
     os.makedirs("lib", exist_ok=True)
     with open("lib/main.dart", "w", encoding="utf-8") as f:
         f.write(final_dart_code)
-    print("✅ lib/main.dart updated!")
-    
+    print("✅ lib/main.dart updated successfully!")
