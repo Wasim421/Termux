@@ -68,12 +68,13 @@ jobs:
 
       # ७. AI কোড ইনজেকশন (Gemini Python Script)
       - name: AI Code Injection
-        run: |
-          if [ -f builder_script.py ]; then
+       run: |
+        if [ -f builder_script.py ]; then
             python3 builder_script.py "${{ github.event.client_payload.prompt }}" "${{ github.event.client_payload.asset_name }}"
           fi
-        env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+       env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+
 
       # ৮. গ্র্যাডল ফাইল এবং প্রোপার্টিজ জেনারেট করা (৮.১৩ ভার্সন মার্জড)
       - name: Generate Essential Android Files
