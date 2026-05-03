@@ -73,11 +73,17 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
-      # ৮. গ্র্যাডল ফাইল এবং প্রোপার্টিজ জেনারেট করা
+            # ৮. গ্র্যাডল ফাইল এবং প্রোপার্টিজ জেনারেট করা
       - name: Generate Essential Android Files
         run: |
-          # অ্যান্ড্রয়েড স্ট্রাকচার তৈরি
-          flutter create . --platforms android
+          # আগের কোনো কনফ্লিক্টিং ফাইল থাকলে মুছে ফেলা
+          rm -rf android
+          
+          # নতুন প্যাকেজ নাম দিয়ে ফ্রেশ অ্যান্ড্রয়েড প্রজেক্ট তৈরি করা
+          NEW_PKG="${{ github.event.client_payload.package_name }}"
+          if [ -z "$NEW_PKG" ]; then NEW_PKG="com.wasim.ai_bd"; fi
+          
+          flutter create . --platforms android --org ${NEW_PKG%.*}
           
           # Gradle Wrapper এবং Properties ম্যানুয়ালি ফিক্স করা
           mkdir -p android/gradle/wrapper
@@ -89,7 +95,7 @@ jobs:
           distributionUrl=https\://services.gradle.org/distributions/gradle-8.10-all.zip
           EOT
           
-          # AGP 9+ এবং মেমোরি ফিক্স
+          # AGP এবং মেমোরি ফিক্স
           cat <<EOT > android/gradle.properties
           org.gradle.jvmargs=-Xmx4G
           android.useAndroidX=true
@@ -101,6 +107,7 @@ jobs:
           flutter clean
           flutter pub get
           chmod +x android/gradlew
+          
 
       # ৯. Base64 থেকে JKS ফাইল জেনারেট করা
       - name: Decode Keystore
