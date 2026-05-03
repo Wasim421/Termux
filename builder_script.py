@@ -1,28 +1,30 @@
 import google.generativeai as genai
+from google.generativeai.types import RequestOptions
 import os
 import sys
 import collections
 from PIL import Image
 import warnings
 
-# অপ্রয়োজনীয় ওয়ার্নিং এবং ডিক্লারেশন বন্ধ রাখা
+# ১. সেটিংস ও ওয়ার্নিং ফিল্টার
 warnings.filterwarnings("ignore")
 
-# ১. Gemini API কনফিগারেশন
-# তোমার দেওয়া কি-টি গিটহাব সিক্রেটে (GEMINI_API_KEY) সেভ করে নিও
+# ২. API কনফিগারেশন
 api_key = os.getenv("GEMINI_API_KEY")
 if not api_key:
-    print("❌ Error: GEMINI_API_KEY not found in Environment!")
+    print("❌ Error: GEMINI_API_KEY not found!")
     sys.exit(1)
 
-# সঠিক কনফিগারেশন
 genai.configure(api_key=api_key)
 
-# সঠিক মডেল নেম (models/ প্রিফিক্স ছাড়া ব্যবহার করাই বর্তমানে বেশি স্টেবল)
-model = genai.GenerativeModel('gemini-1.5-flash')
+# ৩. মডেল সেটিংস (এখানেই আসল ফিক্স)
+# 'models/gemini-1.5-flash' এর বদলে শুধু নাম ব্যবহার এবং লেটেস্ট অপশন দেওয়া
+model = genai.GenerativeModel(
+    model_name='gemini-1.5-flash',
+)
 
 def get_dominant_color(image_path):
-    """ইমেজ থেকে ডমিন্যান্ট কালার বের করার লজিক"""
+    """ইমেজ থেকে থিম কালার বের করার লজিক"""
     try:
         if not os.path.isfile(image_path):
             return '#1A1A1A'
@@ -42,30 +44,33 @@ def generate_ai_app(prompt, asset_name):
     asset_path = f"assets/{asset_name}"
     hex_color = get_dominant_color(asset_path)
     
-    # ইনস্ট্রাকশন যা জেমিনাইকে ভুল করা থেকে আটকাবে
+    # ইনস্ট্রাকশন যা AI-কে ভুল করা থেকে বাঁচাবে
     system_prompt = f"""
-    You are a Flutter Expert. Generate a single 'main.dart' file.
-    - Style: Material 3, Dark Mode, Glassmorphism.
+    Act as a Senior Flutter Engineer. Create a single self-contained 'main.dart' file.
+    - Style: Material 3, Dark Theme, Glassmorphism UI.
     - Primary Color: {hex_color}.
-    - Background: Use 'assets/{asset_name}' with BoxFit.cover.
-    - Specific Task: "{prompt}".
+    - Background Asset: 'assets/{asset_name}' (BoxFit.cover).
+    - Task: "{prompt}".
     
     CRITICAL RULES:
-    1. Output ONLY the raw Dart code. 
-    2. Do NOT use markdown code blocks or any triple backticks (```).
-    3. Include 'dart:ui' import for BackdropFilter.
+    1. Output ONLY pure Dart code. 
+    2. NO markdown, NO triple backticks (```).
+    3. Must include 'dart:ui' for BackdropFilter.
     """
 
     try:
-        # জেমিনাই থেকে রেসপন্স নেওয়া
-        response = model.generate_content(system_prompt)
+        # জেনারেশন কল - এখানে RequestOptions দিয়ে v1 ভার্সন নিশ্চিত করা হয়েছে
+        response = model.generate_content(
+            system_prompt,
+            request_options=RequestOptions(api_version='v1')
+        )
         
         if not response.text:
-            raise ValueError("Empty response from AI")
+            raise ValueError("Empty response from Gemini")
             
         code = response.text.strip()
         
-        # অ্যাডভান্সড ক্লিনআপ (যদি জেমিনাই নিয়ম ভেঙে ব্যাকটিক দেয়)
+        # ব্যাকটিক ক্লিনআপ লজিক
         if "```" in code:
             parts = code.split("```")
             for part in parts:
@@ -77,7 +82,7 @@ def generate_ai_app(prompt, asset_name):
         
     except Exception as e:
         print(f"❌ Gemini Error: {e}")
-        # ফেইল-সেফ কোড
+        # ফেইল-সেফ কোড (যদি API ফেইল করে)
         return f"""
 import 'package:flutter/material.dart';
 void main() => runApp(MaterialApp(
@@ -90,7 +95,8 @@ void main() => runApp(MaterialApp(
 """
 
 if __name__ == "__main__":
-    user_prompt = sys.argv[1] if len(sys.argv) > 1 and sys.argv[1].strip() else "GAI Reader Pro UI"
+    # আর্গুমেন্ট হ্যান্ডলিং
+    user_prompt = sys.argv[1] if len(sys.argv) > 1 and sys.argv[1].strip() else "GAI Reader Pro"
     raw_asset = sys.argv[2] if len(sys.argv) > 2 and sys.argv[2].strip() else "background.png"
     
     asset_file = os.path.basename(raw_asset)
@@ -98,9 +104,10 @@ if __name__ == "__main__":
     print(f"🛠️ Starting AI Build Engine (Gemini 1.5 Flash)...")
     final_dart_code = generate_ai_app(user_prompt, asset_file)
     
+    # ফাইল রাইটিং
     os.makedirs("lib", exist_ok=True)
     with open("lib/main.dart", "w", encoding="utf-8") as f:
         f.write(final_dart_code)
         
-    print("✅ lib/main.dart has been successfully updated!")
+    print("✅ lib/main.dart updated successfully!")
     
