@@ -3,17 +3,22 @@ import os
 import sys
 import collections
 from PIL import Image
+import warnings
 
-# ১. Gemini API কনফিগারেশন
+# Depreciation ওয়ার্নিং বন্ধ রাখা যাতে লগ পরিষ্কার থাকে
+warnings.filterwarnings("ignore", category=FutureWarning)
+
+# API কনফিগারেশন
 api_key = os.getenv("GEMINI_API_KEY")
 if not api_key:
-    print("❌ Error: GEMINI_API_KEY not found in secrets!")
+    print("❌ Error: GEMINI_API_KEY not found!")
     sys.exit(1)
 
 genai.configure(api_key=api_key)
 
-# সঠিক এবং লেটেস্ট মডেল নেম ব্যবহার (gemini-1.5-flash)
+# সঠিক মডেল নেম
 model = genai.GenerativeModel('gemini-1.5-flash')
+
 
 def get_dominant_color(image_path):
     """ইমেজ থেকে ডমিন্যান্ট কালার বের করার ফিচারটি অক্ষুণ্ণ রাখা হয়েছে"""
