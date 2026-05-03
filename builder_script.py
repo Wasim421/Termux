@@ -1,5 +1,6 @@
 import os
 import sys
+import re
 from PIL import Image
 from huggingface_hub import InferenceClient
 
@@ -13,14 +14,17 @@ client = InferenceClient(model=MODEL_ID, token=HF_TOKEN)
 def get_dominant_color(image_path):
     """ইমেজ থেকে ডমিন্যান্ট কালার বের করে থিমিংয়ের জন্য"""
     try:
-        if not os.path.isfile(image_path): 
+        # অ্যাসেট ফোল্ডার চেক করা
+        actual_path = image_path if os.path.exists(image_path) else f"assets/{os.path.basename(image_path)}"
+        if not os.path.isfile(actual_path): 
             return '#1A1A1A'
-        img = Image.open(image_path).convert("RGB")
+            
+        img = Image.open(actual_path).convert("RGB")
         img.thumbnail((50, 50))
         pixels = img.getcolors(img.size[0] * img.size[1])
         if not pixels: 
             return '#1A1A1A'
-        # সবচেয়ে বেশি পিক্সেল আছে এমন কালারটি নেওয়া
+            
         most_common = sorted(pixels, key=lambda x: x[0], reverse=True)
         r, g, b = most_common[0][1][:3]
         return '#{:02x}{:02x}{:02x}'.format(r, g, b)
@@ -28,35 +32,35 @@ def get_dominant_color(image_path):
         return '#1A1A1A'
 
 def clean_dart_code(raw_code):
-    """কোড থেকে অপ্রয়োজনীয় টেক্সট এবং ব্যাকটিক পরিষ্কার করার উন্নত লজিক"""
-    # ১. যদি কোড ব্লকের ভেতরে থাকে (```dart ... ```)
-    if "```" in raw_code:
-        # ডার্ট ব্লকের অংশটি খুঁজে বের করা
-        parts = raw_code.split("```")
-        for part in parts:
-            if "import 'package:flutter" in part:
-                raw_code = part
-                break
-        # ল্যাঙ্গুয়েজ ট্যাগ রিমুভ করা
-        if raw_code.startswith("dart"):
-            raw_code = raw_code[4:]
-        elif raw_code.startswith("flutter"):
-            raw_code = raw_code[7:]
-
-    # ২. কোডের বাইরের বাড়তি টেক্সট রিমুভ করা (Import এর আগের অংশ)
-    if "import 'package:flutter" in raw_code:
-        raw_code = raw_code[raw_code.find("import 'package:flutter"):]
-
-    return raw_code.strip()
+    """কোড থেকে অপ্রয়োজনীয় টেক্সট এবং ব্যাকটিক পরিষ্কার করার মোক্ষম উপায় (Regex ব্যবহার করে)"""
+    try:
+        # শুধু ইমপোর্ট থেকে শেষ ব্র্যাকেট পর্যন্ত কোড ব্লকটি খুঁজে বের করা
+        code_match = re.search(r'import.*void main\(.*\}', raw_code, re.DOTALL)
+        if code_match:
+            clean_code = code_match.group(0)
+            return clean_code.strip()
+        
+        # যদি রেজেক্স ফেল করে, তবে ব্যাকটিক ম্যানুয়াল ক্লিনিং
+        if "```dart" in raw_code:
+            raw_code = raw_code.split("```dart")[1].split("```")[0]
+        elif "```" in raw_code:
+            raw_code = raw_code.split("```")[1].split("```")[0]
+            
+        return raw_code.strip()
+    except Exception:
+        return raw_code.strip()
 
 def generate_ai_app(prompt, asset_name):
-    hex_color = get_dominant_color(f"assets/{asset_name}")
+    hex_color = get_dominant_color(asset_name)
     
-    # ইনস্ট্রাকশন সেট
+    # ইনস্ট্রাকশন সেট (Updated with Fixes)
     system_message = (
         f"You are an expert Flutter developer. Write ONLY a single, complete main.dart file. "
         f"Use Dark Mode. Use Primary Color: {hex_color}. Use assets/{asset_name} as a background image. "
-        f"Ensure all brackets are closed. NO explanations, NO Markdown text."
+        f"CRITICAL RULES:\n"
+        f"1. NEVER use 'const' before a Tween if .animate() is called.\n"
+        f"2. NEVER use a PageController as a parent for CurvedAnimation. Use an AnimationController instead.\n"
+        f"3. Ensure all brackets are closed. NO explanations, NO Markdown text."
     )
     
     messages = [
@@ -69,8 +73,8 @@ def generate_ai_app(prompt, asset_name):
         
         response = client.chat_completion(
             messages=messages,
-            max_tokens=2500, # কোড যেন মাঝপথে কেটে না যায়
-            temperature=0.1  # নির্ভুল কোডের জন্য লো টেম্পারেচার
+            max_tokens=2500, 
+            temperature=0.1  
         )
         
         raw_content = response.choices[0].message.content
@@ -84,11 +88,11 @@ def generate_ai_app(prompt, asset_name):
 
     except Exception as e:
         print(f"⚠️ Error encountered: {e}")
-        # ফলব্যাক অ্যাপ (যাতে বিল্ড প্রসেস পুরোপুরি বন্ধ না হয়ে যায়)
+        # ফলব্যাক অ্যাপ
         return (
             "import 'package:flutter/material.dart';\n\n"
             "void main() => runApp(MaterialApp(theme: ThemeData.dark(), "
-            "home: Scaffold(body: Center(child: Text('Build Issue - Please Re-run')))));"
+            "home: Scaffold(body: Center(child: Text('AI Generation Failed - Retry')))));"
         )
 
 if __name__ == "__main__":
@@ -104,5 +108,5 @@ if __name__ == "__main__":
     with open("lib/main.dart", "w", encoding="utf-8") as f:
         f.write(dart_code)
     
-    print("✅ lib/main.dart has been updated successfully!")
+    print("✅ lib/main.dart has been updated successfully with AI fixes!")
     
