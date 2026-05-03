@@ -45,10 +45,11 @@ jobs:
           if [ -z "$TARGET_SDK" ]; then TARGET_SDK="35"; fi
           
           echo "Updating to Package: $NEW_PKG and SDK: $TARGET_SDK"
-          sed -i "s/com.example.default/$NEW_PKG/g" android/app/build.gradle
-          sed -i "s/com.example.default/$NEW_PKG/g" android/app/src/main/AndroidManifest.xml
-          sed -i "s/compileSdkVersion [0-9]*/compileSdkVersion $TARGET_SDK/g" android/app/build.gradle
-          sed -i "s/targetSdkVersion [0-9]*/targetSdkVersion $TARGET_SDK/g" android/app/build.gradle
+          # sed কমান্ডগুলো সতর্কতার সাথে চালানো হচ্ছে যাতে build.gradle নষ্ট না হয়
+          sed -i "s/namespace \".*\"/namespace \"$NEW_PKG\"/g" android/app/build.gradle || true
+          sed -i "s/applicationId \".*\"/applicationId \"$NEW_PKG\"/g" android/app/build.gradle || true
+          sed -i "s/compileSdkVersion [0-9]*/compileSdkVersion $TARGET_SDK/g" android/app/build.gradle || true
+          sed -i "s/targetSdkVersion [0-9]*/targetSdkVersion $TARGET_SDK/g" android/app/build.gradle || true
 
       # ৬. অ্যাসেটস অটো-রেজিস্ট্রেশন
       - name: Register Assets
@@ -59,7 +60,7 @@ jobs:
             echo "    - assets/" >> pubspec.yaml
           fi
 
-      # ৭. AI কোড ইনজেকশন
+      # ৭. AI কোড ইনজেকশন (Gemini Python Script)
       - name: AI Code Injection
         run: |
           if [ -f builder_script.py ]; then
@@ -68,17 +69,18 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
-      # ৮. ফ্লাটার ক্লিন এবং এনভায়রনমেন্ট তৈরি
-      - name: Migrate and Install Dependencies
+      # ৮. ফ্লাটার ক্লিন এবং ডিপেন্ডেন্সি ম্যানেজমেন্ট
+      - name: Install Dependencies
         run: |
           flutter clean
+          # পুরনো প্লাগিন এরর এড়াতে ক্যাশ পরিষ্কার
           rm -rf android/app/src/main/java/io/flutter/plugins/
-          
           flutter pub get
 
-      # ৯. Base64 থেকে JKS ফাইল জেনারেট করা (আপনার অনুরোধ অনুযায়ী যোগ করা হয়েছে)
+      # ৯. Base64 থেকে JKS ফাইল জেনারেট করা (Path নিশ্চিত করা হয়েছে)
       - name: Decode Keystore
         run: |
+          mkdir -p android/app
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
 
       # ১০. ফাইনাল APK বিল্ড (Keystore এনভায়রনমেন্টসহ)
@@ -98,4 +100,3 @@ jobs:
         with:
           name: Generated-AI-APK
           path: build/app/outputs/flutter-apk/app-release-arm64-v8a.apk
-          
