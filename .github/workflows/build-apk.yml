@@ -11,37 +11,46 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      # ১. রিপোজিটরি চেকআউট
+      # ১. রিপোজিটরি কোড ডাউনলোড করা
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # ২. জাভা সেটআপ (JDK 17 Stable)
+      # ২. জাভা এনভায়রনমেন্ট সেটআপ (JDK 17)
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
 
-      # ৩. ফ্লাটার সেটআপ
+      # ৩. ফ্লাটার এসডিকে সেটআপ
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
 
-      # ৪. পাইথন লাইব্রেরি ইনস্টল (Pillow এবং Requests ফিক্স)
+      # ৪. পাইথন লাইব্রেরি ইনস্টল (Pillow এবং Requests)
+      # এটি builder_script.py-এর জন্য বাধ্যতামূলক
       - name: Install Python Dependencies
         run: pip install Pillow requests
 
-      # ৫. এআই কোড ইনজেকশন (Llama/Hugging Face Script)
+      # ৫. এআই কোড ইনজেকশন (Llama 3.1 Script)
+      # এখানে PROMPT এবং ASSET খালি থাকলে ডিফল্ট ভ্যালু সেট হবে
       - name: AI Code Injection
         run: |
           if [ -f builder_script.py ]; then
-            python3 builder_script.py "${{ github.event.client_payload.prompt }}" "${{ github.event.client_payload.asset_name }}"
+            PROMPT="${{ github.event.client_payload.prompt }}"
+            ASSET="${{ github.event.client_payload.asset_name }}"
+            
+            # প্রম্পট বা অ্যাসেট নাম না থাকলে এগুলো ব্যবহার হবে
+            if [ -z "$PROMPT" ]; then PROMPT="GAI Reader Pro Modern UI Design"; fi
+            if [ -z "$ASSET" ]; then ASSET="background.png"; fi
+            
+            python3 builder_script.py "$PROMPT" "$ASSET"
           fi
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
 
-      # ৬. অ্যান্ড্রয়েড ফাইল ও গ্র্যাডল ৮.১৩ কনফিগারেশন
+      # ৬. অ্যান্ড্রয়েড প্রোজেক্ট এবং গ্র্যাডল ৮.১৩ কনফিগারেশন
       - name: Generate Essential Android Files
         run: |
           rm -rf android
@@ -50,6 +59,7 @@ jobs:
           
           flutter create . --platforms android --org ${NEW_PKG%.*}
           
+          # গ্র্যাডল র্যাপার আপডেট (Version 8.13)
           mkdir -p android/gradle/wrapper
           cat <<EOT > android/gradle/wrapper/gradle-wrapper.properties
           distributionBase=GRADLE_USER_HOME
@@ -59,6 +69,7 @@ jobs:
           distributionUrl=https\://services.gradle.org/distributions/gradle-8.13-all.zip
           EOT
           
+          # গ্র্যাডল প্রোপার্টিজ (৪জিবি র‍্যাম বরাদ্দ)
           cat <<EOT > android/gradle.properties
           org.gradle.jvmargs=-Xmx4G
           android.useAndroidX=true
@@ -71,13 +82,13 @@ jobs:
           flutter pub get
           chmod +x android/gradlew
 
-      # ৭. কীস্টোর ডিকোড (Signing)
+      # ৭. কীস্টোর সেটআপ (অ্যাপ সাইনিংয়ের জন্য)
       - name: Decode Keystore
         run: |
           mkdir -p android/app
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
 
-      # ৮. ফাইনাল APK বিল্ড (Split-per-ABI for arm64)
+      # ৮. রিলিজ APK বিল্ড (arm64-v8a এর জন্য অপ্টিমাইজড)
       - name: Build APK (Release)
         run: |
           flutter build apk --release \
@@ -90,7 +101,7 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
 
-      # ৯. তৈরি হওয়া APK ফাইলটি আপলোড করা
+      # ৯. তৈরি হওয়া APK ফাইলটি গিটহাবে আপলোড করা
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
