@@ -64,7 +64,7 @@ jobs:
             echo "    - assets/" >> pubspec.yaml
           fi
 
-      # ৭. AI কোড ইনজেকশন (Gemini Python Script)
+      # ७. AI কোড ইনজেকশন (Gemini Python Script)
       - name: AI Code Injection
         run: |
           if [ -f builder_script.py ]; then
@@ -73,7 +73,7 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
-            # ৮. গ্র্যাডল ফাইল এবং প্রোপার্টিজ জেনারেট করা
+      # ৮. গ্র্যাডল ফাইল এবং প্রোপার্টিজ জেনারেট করা (৮.১৩ ভার্সন মার্জড)
       - name: Generate Essential Android Files
         run: |
           # আগের কোনো কনফ্লিক্টিং ফাইল থাকলে মুছে ফেলা
@@ -85,14 +85,14 @@ jobs:
           
           flutter create . --platforms android --org ${NEW_PKG%.*}
           
-          # Gradle Wrapper এবং Properties ম্যানুয়ালি ফিক্স করা
+          # Gradle Wrapper আপডেট করা (৮.১৩ ভার্সনে - লগের এরর অনুযায়ী)
           mkdir -p android/gradle/wrapper
           cat <<EOT > android/gradle/wrapper/gradle-wrapper.properties
           distributionBase=GRADLE_USER_HOME
           distributionPath=wrapper/dists
           zipStoreBase=GRADLE_USER_HOME
           zipStorePath=wrapper/dists
-          distributionUrl=https\://services.gradle.org/distributions/gradle-8.10-all.zip
+          distributionUrl=https\://services.gradle.org/distributions/gradle-8.13-all.zip
           EOT
           
           # AGP এবং মেমোরি ফিক্স
@@ -107,7 +107,6 @@ jobs:
           flutter clean
           flutter pub get
           chmod +x android/gradlew
-          
 
       # ৯. Base64 থেকে JKS ফাইল জেনারেট করা
       - name: Decode Keystore
@@ -115,7 +114,7 @@ jobs:
           mkdir -p android/app
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
 
-      # ১০. ফাইনাল APK বিল্ড (মার্জ করা এবং ইন্ডেন্টেশন ফিক্সড)
+      # ১০. ফাইনাল APK বিল্ড
       - name: Build APK (Release)
         run: |
           flutter build apk --release \
