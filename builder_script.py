@@ -5,108 +5,121 @@ import collections
 from PIL import Image
 import warnings
 
-# Depreciation ওয়ার্নিং বন্ধ রাখা যাতে লগ পরিষ্কার থাকে
+# অপ্রয়োজনীয় ওয়ার্নিং বন্ধ রাখা যাতে লগ পরিষ্কার থাকে
 warnings.filterwarnings("ignore", category=FutureWarning)
+warnings.filterwarnings("ignore")
 
-# API কনফিগারেশন
+# ১. Gemini API কনফিগারেশন
 api_key = os.getenv("GEMINI_API_KEY")
 if not api_key:
-    print("❌ Error: GEMINI_API_KEY not found!")
+    print("❌ Error: GEMINI_API_KEY not found in Environment Variables!")
     sys.exit(1)
 
 genai.configure(api_key=api_key)
 
-# সঠিক মডেল নেম
+# মডেল হিসেবে লেটেস্ট স্টেবল 'gemini-1.5-flash' ব্যবহার করা হয়েছে
 model = genai.GenerativeModel('gemini-1.5-flash')
 
-
 def get_dominant_color(image_path):
-    """ইমেজ থেকে ডমিন্যান্ট কালার বের করার ফিচারটি অক্ষুণ্ণ রাখা হয়েছে"""
+    """ইমেজ থেকে ডমিন্যান্ট কালার বের করার সবচেয়ে আধুনিক লজিক"""
     try:
         if not os.path.isfile(image_path):
-            return '#6200EE' # ডিফল্ট পার্পল
+            return '#1A1A1A' # ডিফল্ট ডার্ক গ্রে
+        
         img = Image.open(image_path).copy()
         img.thumbnail((50, 50)) 
         pixels = list(img.getdata())
+        
+        # পিক্সেল কাউন্টিং
         most_common = collections.Counter(pixels).most_common(10)
         for color, count in most_common:
-            # আলফা চ্যানেল থাকলে তা বাদ দিয়ে RGB নেওয়া
+            # RGB ভ্যালু চেক (আলফা থাকলে বাদ দিয়ে)
             r, g, b = color[:3]
-            # খুব অন্ধকার বা খুব উজ্জ্বল কালার এড়ানো
+            # খুব অন্ধকার বা খুব উজ্জ্বল কালার এড়িয়ে মাঝারি ভাইব্রেন্ট কালার নেওয়া
             if 30 < (r+g+b)/3 < 220:
                 return '#{:02x}{:02x}{:02x}'.format(r, g, b)
+        
         return '#{:02x}{:02x}{:02x}'.format(*most_common[0][0][:3])
     except Exception:
-        return '#6200EE'
+        return '#1A1A1A'
 
 def generate_ai_app(prompt, asset_name):
+    """AI এর মাধ্যমে কোড জেনারেশন এবং ক্লিনআপ লজিক"""
     asset_path = f"assets/{asset_name}"
     hex_color = get_dominant_color(asset_path)
     
-    # সিস্টেম প্রম্পট (আপনার ফিচারের মূল লজিক)
+    # ইনস্ট্রাকশন প্রম্পট (আপনার সব ফিচারসহ)
     system_prompt = f"""
-    You are an expert Flutter Developer. Create a single self-contained main.dart file.
+    Act as a Senior Flutter Developer. Create a single self-contained main.dart file.
     - Application Theme: Dark Mode with Material 3.
     - Primary Color: {hex_color}.
-    - Background Image: 'assets/{asset_name}' (Use BoxFit.cover).
-    - Design Style: Glassmorphism (BackdropFilter) for all UI cards.
-    - Requirements: "{prompt}".
+    - Background: Use 'assets/{asset_name}' (BoxFit.cover) with glassmorphism (BackdropFilter).
+    - Features to Implement: "{prompt}".
     
     RULES:
-    1. Return ONLY pure Dart code.
-    2. Do NOT use markdown like ```dart or ```.
-    3. Ensure all necessary imports like 'dart:ui' are included for Glassmorphism.
-    4. Code must be error-free and ready to run.
+    1. Output ONLY pure Dart code. 
+    2. NEVER include explanations, markdown code blocks (```) or triple backticks.
+    3. Include all necessary imports like 'dart:ui' for BackdropFilter.
+    4. Ensure the code is production-ready and error-free.
     """
 
     try:
-        # এপিআই কল
+        # জেমিনাই এপিআই কল
         response = model.generate_content(system_prompt)
         
         if not response.text:
-            raise ValueError("Empty response from Gemini")
+            raise ValueError("Gemini returned an empty response.")
             
         code = response.text.strip()
         
-        # যদি জেমিনাই ভুল করে ব্যাকটিক (```) দিয়ে দেয়, তবে তা ফিল্টার করা
+        # অ্যাডভান্সড কোড ক্লিনআপ (যদি জেমিনাই ভুল করে ব্যাকটিক দিয়ে দেয়)
         if "```" in code:
-            code = code.split("```")[-2] # কোড ব্লক অংশটি নেওয়া
-            if code.startswith("dart"):
-                code = code[4:].strip()
-                
+            # কোড ব্লকের ভেতর থেকে শুধু ডার্ট কোডটুকু বের করা
+            parts = code.split("```")
+            for part in parts:
+                if "import " in part and "void main" in part:
+                    code = part.replace("dart", "", 1).strip()
+                    break
+                    
         return code.strip()
         
     except Exception as e:
         print(f"❌ Gemini Error: {e}")
-        # এরর হলে একটি ডিফল্ট ফেইল-সেফ কোড রিটার্ন করা যাতে অ্যাপ ক্রাশ না করে
+        # ফেইল-সেফ এরর স্ক্রিন কোড (যাতে অ্যাপ ক্রাশ না করে)
         return f"""
 import 'package:flutter/material.dart';
+import 'dart:ui';
+
 void main() => runApp(MaterialApp(
+  theme: ThemeData.dark(useMaterial3: true),
   home: Scaffold(
     backgroundColor: Colors.black,
     body: Center(
-      child: Text('AI Build Error: Check API Logs\\n{str(e)[:50]}', 
-      style: TextStyle(color: Colors.white), textAlign: TextAlign.center),
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Text('AI BUILD ERROR:\\n{str(e)[:100]}', 
+        style: TextStyle(color: Colors.redAccent, fontSize: 16), textAlign: TextAlign.center),
+      ),
     ),
   ),
 ));
 """
 
 if __name__ == "__main__":
-    # কমান্ড লাইন আর্গুমেন্ট হ্যান্ডলিং (আপনার গিটহাব অ্যাকশন থেকে আসা)
-    user_prompt = sys.argv[1] if len(sys.argv) > 1 else "Modern E-book Reader UI"
-    raw_asset = sys.argv[2] if len(sys.argv) > 2 else "background.png"
+    # কমান্ড লাইন থেকে ডাটা নেওয়া
+    user_prompt = sys.argv[1] if len(sys.argv) > 1 and sys.argv[1].strip() != "" else "Modern E-book Reader UI"
+    raw_asset = sys.argv[2] if len(sys.argv) > 2 and sys.argv[2].strip() != "" else "background.png"
     
-    # অ্যাসেট ফাইল পাথ ক্লিনআপ
+    # অ্যাসেট ফাইলের নাম ক্লিন করা
     asset_file = os.path.basename(raw_asset)
     
-    print(f"🛠️ Starting AI Build Engine...")
+    print(f"🛠️ Building GAI Reader Pro Engine with Gemini...")
     final_dart_code = generate_ai_app(user_prompt, asset_file)
     
-    # লিভ ডিরেক্টরি নিশ্চিত করা এবং ফাইল লেখা
+    # lib/main.dart ফাইলে কোড রাইটিং
     os.makedirs("lib", exist_ok=True)
     with open("lib/main.dart", "w", encoding="utf-8") as f:
         f.write(final_dart_code)
         
-    print("✅ lib/main.dart updated successfully with AI code!")
+    print("✅ lib/main.dart updated successfully!")
     
