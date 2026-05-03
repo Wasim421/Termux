@@ -28,20 +28,19 @@ jobs:
         with:
           channel: 'stable'
 
-      # ৪. পাইথন লাইব্রেরি ইনস্টল (Pillow এবং Requests)
-      # এটি builder_script.py-এর জন্য বাধ্যতামূলক
+      # ৪. পাইথন লাইব্রেরি ইনস্টল (Pillow, Requests এবং Hub Client)
+      # এটি নতুন মার্জড builder_script.py-এর জন্য বাধ্যতামূলক
       - name: Install Python Dependencies
-        run: pip install Pillow requests
+        run: pip install Pillow requests huggingface_hub
 
-      # ৫. এআই কোড ইনজেকশন (Llama 3.1 Script)
-      # এখানে PROMPT এবং ASSET খালি থাকলে ডিফল্ট ভ্যালু সেট হবে
+      # ৫. এআই কোড ইনজেকশন (Merged Script Engine)
       - name: AI Code Injection
         run: |
           if [ -f builder_script.py ]; then
             PROMPT="${{ github.event.client_payload.prompt }}"
             ASSET="${{ github.event.client_payload.asset_name }}"
             
-            # প্রম্পট বা অ্যাসেট নাম না থাকলে এগুলো ব্যবহার হবে
+            # ডিফল্ট ভ্যালু সেট করা যাতে ইনপুট না থাকলেও বিল্ড না থামে
             if [ -z "$PROMPT" ]; then PROMPT="GAI Reader Pro Modern UI Design"; fi
             if [ -z "$ASSET" ]; then ASSET="background.png"; fi
             
@@ -82,13 +81,13 @@ jobs:
           flutter pub get
           chmod +x android/gradlew
 
-      # ৭. কীস্টোর সেটআপ (অ্যাপ সাইনিংয়ের জন্য)
+      # ৭. কীস্টোর সেটআপ (অ্যাপ সাইনিং)
       - name: Decode Keystore
         run: |
           mkdir -p android/app
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
 
-      # ৮. রিলিজ APK বিল্ড (arm64-v8a এর জন্য অপ্টিমাইজড)
+      # ৮. রিলিজ APK বিল্ড (arm64-v8a অপ্টিমাইজড)
       - name: Build APK (Release)
         run: |
           flutter build apk --release \
