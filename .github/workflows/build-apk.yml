@@ -1,7 +1,7 @@
 name: AI APK Builder Engine
 
 on: 
-  push
+  push:
     branches:
         - main
   repository_dispatch:
@@ -35,7 +35,7 @@ jobs:
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-       # ৫. প্যাকেজ নাম এবং SDK ডাইনামিকালি পরিবর্তন
+      # ৫. প্যাকেজ নাম এবং SDK ডাইনামিকালি পরিবর্তন
       - name: Update Package and SDK
         run: |
           NEW_PKG="${{ github.event.client_payload.package_name }}"
@@ -46,11 +46,10 @@ jobs:
           
           echo "Updating to Package: $NEW_PKG and SDK: $TARGET_SDK"
           
-          # build.gradle ফাইলের লাইনগুলো সঠিকভাবে আপডেট করার জন্য
-          sed -i "s/def targetSdkVersion = [0-9]*/def targetSdkVersion = $TARGET_SDK/g" android/app/build.gradle
-          sed -i "s/compileSdkVersion [0-9]*/compileSdkVersion $TARGET_SDK/g" android/app/build.gradle
-          sed -i "s/applicationId \".*\"/applicationId \"$NEW_PKG\"/g" android/app/build.gradle
-
+          # build.gradle ফাইল আপডেট (sed কমান্ডের টাইপিং এরর ফিক্সসহ)
+          sed -i "s/def targetSdkVersion = [0-9]*/def targetSdkVersion = $TARGET_SDK/g" android/app/build.gradle || true
+          sed -i "s/compileSdkVersion [0-9]*/compileSdkVersion $TARGET_SDK/g" android/app/build.gradle || true
+          sed -i "s/applicationId \".*\"/applicationId \"$NEW_PKG\"/g" android/app/build.gradle || true
 
       # ৬. অ্যাসেটস অটো-রেজিস্ট্রেশন
       - name: Register Assets
@@ -70,25 +69,42 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
-                  # ৮. গ্র্যাডল ফাইল জেনারেট এবং ডিপেন্ডেন্সি ইনস্টল
-      - name: Install Dependencies
+      # ৮. গ্র্যাডল ফাইল এবং প্রোপার্টিজ জেনারেট করা (মার্জ করা স্টেপ)
+      - name: Generate Essential Android Files
         run: |
-          # গ্র্যাডল এবং প্রজেক্ট স্ট্রাকচার ঠিক করা
+          # হারানো অ্যান্ড্রয়েড স্ট্রাকচার তৈরি করা
           flutter create . --platforms android
+          
+          # gradle-wrapper.properties তৈরি করা (Gradle 8.2 নিশ্চিত করতে)
+          mkdir -p android/gradle/wrapper
+          cat <<EOT > android/gradle/wrapper/gradle-wrapper.properties
+          distributionBase=GRADLE_USER_HOME
+          distributionPath=wrapper/dists
+          zipStoreBase=GRADLE_USER_HOME
+          zipStorePath=wrapper/dists
+          distributionUrl=https\://services.gradle.org/distributions/gradle-8.2-all.zip
+          EOT
+          
+          # gradle.properties তৈরি করা (v2 এম্বেডিং ও মেমোরি ফিক্স)
+          cat <<EOT > android/gradle.properties
+          org.gradle.jvmargs=-Xmx4G
+          android.useAndroidX=true
+          android.enableJetifier=true
+          android.suppressBuildResourcesInAppChecks=true
+          EOT
+          
+          # ক্লিন এবং ডিপেন্ডেন্সি ইনস্টল
           flutter clean
           flutter pub get
-          # পারমিশন ফিক্স
           chmod +x android/gradlew
-          
-          
 
-      # ৯. Base64 থেকে JKS ফাইল জেনারেট করা (Path নিশ্চিত করা হয়েছে)
+      # ৯. Base64 থেকে JKS ফাইল জেনারেট করা
       - name: Decode Keystore
         run: |
           mkdir -p android/app
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
 
-      #      # ১০. ফাইনাল APK বিল্ড (ভার্সন চেক স্কিপ করে)
+      # ১০. ফাইনাল APK বিল্ড (ভার্সন চেক স্কিপ করে)
       - name: Build APK (Release)
         run: |
           flutter build apk --release \
@@ -106,3 +122,4 @@ jobs:
         with:
           name: Generated-AI-APK
           path: build/app/outputs/flutter-apk/app-release-arm64-v8a.apk
+          
