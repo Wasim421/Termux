@@ -35,7 +35,7 @@ jobs:
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-      # ৫. প্যাকেজ নাম এবং SDK ডাইনামিকালি পরিবর্তন
+       # ৫. প্যাকেজ নাম এবং SDK ডাইনামিকালি পরিবর্তন
       - name: Update Package and SDK
         run: |
           NEW_PKG="${{ github.event.client_payload.package_name }}"
@@ -45,11 +45,12 @@ jobs:
           if [ -z "$TARGET_SDK" ]; then TARGET_SDK="35"; fi
           
           echo "Updating to Package: $NEW_PKG and SDK: $TARGET_SDK"
-          # sed কমান্ডগুলো সতর্কতার সাথে চালানো হচ্ছে যাতে build.gradle নষ্ট না হয়
-          sed -i "s/namespace \".*\"/namespace \"$NEW_PKG\"/g" android/app/build.gradle || true
-          sed -i "s/applicationId \".*\"/applicationId \"$NEW_PKG\"/g" android/app/build.gradle || true
-          sed -i "s/compileSdkVersion [0-9]*/compileSdkVersion $TARGET_SDK/g" android/app/build.gradle || true
-          sed -i "s/targetSdkVersion [0-9]*/targetSdkVersion $TARGET_SDK/g" android/app/build.gradle || true
+          
+          # build.gradle ফাইলের লাইনগুলো সঠিকভাবে আপডেট করার জন্য
+          sed -i "s/def targetSdkVersion = [0-9]*/def targetSdkVersion = $TARGET_SDK/g" android/app/build.gradle
+          sed -i "s/compileSdkVersion [0-9]*/compileSdkVersion $TARGET_SDK/g" android/app/build.gradle
+          sed -i "s/applicationId \".*\"/applicationId \"$NEW_PKG\"/g" android/app/build.gradle
+
 
       # ৬. অ্যাসেটস অটো-রেজিস্ট্রেশন
       - name: Register Assets
@@ -70,18 +71,15 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
                   # ৮. গ্র্যাডল ফাইল জেনারেট এবং ডিপেন্ডেন্সি ইনস্টল
-      - name: Install Dependencies and Generate Gradle
+      - name: Install Dependencies
         run: |
-          # প্রথমে ফ্লাটার প্রোজেক্ট রি-ক্রিয়েট করা (এটি gradlew ফাইল তৈরি করবে)
+          # গ্র্যাডল এবং প্রজেক্ট স্ট্রাকচার ঠিক করা
           flutter create . --platforms android
-          
-          # এবার ক্লিন এবং ডিপেন্ডেন্সি ম্যানেজমেন্ট
           flutter clean
-          rm -rf android/app/src/main/java/io/flutter/plugins/
           flutter pub get
-          
-          # গ্র্যাডল ফাইলকে এক্সিকিউট করার পারমিশন দেওয়া
+          # পারমিশন ফিক্স
           chmod +x android/gradlew
+          
           
 
       # ৯. Base64 থেকে JKS ফাইল জেনারেট করা (Path নিশ্চিত করা হয়েছে)
