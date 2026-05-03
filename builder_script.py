@@ -1,15 +1,14 @@
 import google.generativeai as genai
-from google.generativeai.types import RequestOptions
 import os
 import sys
 import collections
 from PIL import Image
 import warnings
 
-# ১. সেটিংস ও ওয়ার্নিং ফিল্টার
+# অপ্রয়োজনীয় ওয়ার্নিং বন্ধ রাখা
 warnings.filterwarnings("ignore")
 
-# ২. API কনফিগারেশন
+# ১. API কনফিগারেশন
 api_key = os.getenv("GEMINI_API_KEY")
 if not api_key:
     print("❌ Error: GEMINI_API_KEY not found!")
@@ -17,14 +16,10 @@ if not api_key:
 
 genai.configure(api_key=api_key)
 
-# ৩. মডেল সেটিংস (এখানেই আসল ফিক্স)
-# 'models/gemini-1.5-flash' এর বদলে শুধু নাম ব্যবহার এবং লেটেস্ট অপশন দেওয়া
-model = genai.GenerativeModel(
-    model_name='gemini-1.5-flash',
-)
+# ২. মডেল সেটিংস (একদম ডিফল্ট পদ্ধতি)
+model = genai.GenerativeModel('gemini-1.5-flash')
 
 def get_dominant_color(image_path):
-    """ইমেজ থেকে থিম কালার বের করার লজিক"""
     try:
         if not os.path.isfile(image_path):
             return '#1A1A1A'
@@ -44,70 +39,43 @@ def generate_ai_app(prompt, asset_name):
     asset_path = f"assets/{asset_name}"
     hex_color = get_dominant_color(asset_path)
     
-    # ইনস্ট্রাকশন যা AI-কে ভুল করা থেকে বাঁচাবে
     system_prompt = f"""
-    Act as a Senior Flutter Engineer. Create a single self-contained 'main.dart' file.
-    - Style: Material 3, Dark Theme, Glassmorphism UI.
+    You are an expert Flutter Developer. Create a single main.dart file.
+    - Theme: Material 3, Dark Mode.
     - Primary Color: {hex_color}.
-    - Background Asset: 'assets/{asset_name}' (BoxFit.cover).
-    - Task: "{prompt}".
-    
-    CRITICAL RULES:
-    1. Output ONLY pure Dart code. 
-    2. NO markdown, NO triple backticks (```).
-    3. Must include 'dart:ui' for BackdropFilter.
+    - Background: 'assets/{asset_name}' with Glassmorphism (BackdropFilter).
+    - Requirements: "{prompt}".
+    - RULES: Return ONLY the code. No markdown backticks (```).
     """
 
     try:
-        # জেনারেশন কল - এখানে RequestOptions দিয়ে v1 ভার্সন নিশ্চিত করা হয়েছে
-        response = model.generate_content(
-            system_prompt,
-            request_options=RequestOptions(api_version='v1')
-        )
-        
-        if not response.text:
-            raise ValueError("Empty response from Gemini")
-            
+        # কোনো বাড়তি RequestOptions ছাড়া সরাসরি কল
+        response = model.generate_content(system_prompt)
         code = response.text.strip()
         
-        # ব্যাকটিক ক্লিনআপ লজিক
+        # যদি তবুও ব্যাকটিক দিয়ে দেয় তবে তা ক্লিন করা
         if "```" in code:
             parts = code.split("```")
             for part in parts:
-                if "import" in part and "void main" in part:
+                if "import " in part and "void main" in part:
                     code = part.replace("dart", "", 1).strip()
                     break
-        
         return code.strip()
         
     except Exception as e:
         print(f"❌ Gemini Error: {e}")
-        # ফেইল-সেফ কোড (যদি API ফেইল করে)
-        return f"""
-import 'package:flutter/material.dart';
-void main() => runApp(MaterialApp(
-  home: Scaffold(
-    backgroundColor: Colors.black,
-    body: Center(child: Text('AI Build Error:\\n{str(e)[:100]}', 
-    style: TextStyle(color: Colors.white), textAlign: TextAlign.center)),
-  ),
-));
-"""
+        # ব্যাকআপ কোড যেন বিল্ড ফেইল না করে
+        return "import 'package:flutter/material.dart'; void main() => runApp(MaterialApp(home: Scaffold(body: Center(child: Text('AI Build Error')))));"
 
 if __name__ == "__main__":
-    # আর্গুমেন্ট হ্যান্ডলিং
-    user_prompt = sys.argv[1] if len(sys.argv) > 1 and sys.argv[1].strip() else "GAI Reader Pro"
-    raw_asset = sys.argv[2] if len(sys.argv) > 2 and sys.argv[2].strip() else "background.png"
+    user_prompt = sys.argv[1] if len(sys.argv) > 1 else "Modern Reader UI"
+    asset_file = sys.argv[2] if len(sys.argv) > 2 else "background.png"
     
-    asset_file = os.path.basename(raw_asset)
+    print(f"🛠️ Building with Gemini AI...")
+    final_dart_code = generate_ai_app(user_prompt, os.path.basename(asset_file))
     
-    print(f"🛠️ Starting AI Build Engine (Gemini 1.5 Flash)...")
-    final_dart_code = generate_ai_app(user_prompt, asset_file)
-    
-    # ফাইল রাইটিং
     os.makedirs("lib", exist_ok=True)
     with open("lib/main.dart", "w", encoding="utf-8") as f:
         f.write(final_dart_code)
-        
-    print("✅ lib/main.dart updated successfully!")
+    print("✅ lib/main.dart updated!")
     
