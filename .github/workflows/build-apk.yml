@@ -1,7 +1,7 @@
 name: AI APK Builder Engine
 
 on: 
-  push:
+  push
     branches:
         - main
   repository_dispatch:
@@ -88,12 +88,13 @@ jobs:
           mkdir -p android/app
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
 
-      # ১০. ফাইনাল APK বিল্ড (Keystore এনভায়রনমেন্টসহ)
+      #      # ১০. ফাইনাল APK বিল্ড (ভার্সন চেক স্কিপ করে)
       - name: Build APK (Release)
         run: |
           flutter build apk --release \
           --split-per-abi \
-          --target-platform android-arm64
+          --target-platform android-arm64 \
+          --android-skip-build-dependency-validation
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
