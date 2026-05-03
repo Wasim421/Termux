@@ -13,7 +13,7 @@ if not api_key:
 genai.configure(api_key=api_key)
 
 # মডেল নাম আপডেট করা হয়েছে যা বর্তমানে স্টেবল
-model = genai.GenerativeModel('gemini-1.5-flash-latest')
+model = genai.GenerativeModel('gemini-1.5-flash')
 
 def get_dominant_color(image_path):
     try:
