@@ -15,7 +15,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # ২. জাভা সেটআপ (JDK 17)
+      # ২. জাভা সেটআপ (JDK 17 Stable)
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
@@ -28,7 +28,11 @@ jobs:
         with:
           channel: 'stable'
 
-      # ৪. এআই কোড ইনজেকশন (Llama/Hugging Face Script)
+      # ৪. পাইথন লাইব্রেরি ইনস্টল (Pillow এবং Requests ফিক্স)
+      - name: Install Python Dependencies
+        run: pip install Pillow requests
+
+      # ৫. এআই কোড ইনজেকশন (Llama/Hugging Face Script)
       - name: AI Code Injection
         run: |
           if [ -f builder_script.py ]; then
@@ -37,7 +41,7 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
 
-      # ৫. অ্যান্ড্রয়েড ফাইল ও গ্র্যাডল কনফিগারেশন (৮.১৩)
+      # ৬. অ্যান্ড্রয়েড ফাইল ও গ্র্যাডল ৮.১৩ কনফিগারেশন
       - name: Generate Essential Android Files
         run: |
           rm -rf android
@@ -67,13 +71,13 @@ jobs:
           flutter pub get
           chmod +x android/gradlew
 
-      # ৬. কীস্টোর ডিকোড (Signing)
+      # ৭. কীস্টোর ডিকোড (Signing)
       - name: Decode Keystore
         run: |
           mkdir -p android/app
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
 
-      # ৭. ফাইনাল APK বিল্ড (Release)
+      # ৮. ফাইনাল APK বিল্ড (Split-per-ABI for arm64)
       - name: Build APK (Release)
         run: |
           flutter build apk --release \
@@ -86,7 +90,7 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
 
-      # ৮. APK আপলোড করা
+      # ৯. তৈরি হওয়া APK ফাইলটি আপলোড করা
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
