@@ -1,9 +1,9 @@
-name: AI APK Builder Engine
+name: Build Flutter AI APK
 
-on: 
+on:
   push:
     branches:
-        - main
+      - main
   repository_dispatch:
     types: [build-event]
 
@@ -11,84 +11,41 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      # ১. রিপোজিটরি ফাইলগুলো নিয়ে আসা
+      # ১. রিপোজিটরি চেকআউট
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # ২. জাভা সেটআপ করা (JDK 17 Stable)
+      # ২. জাভা সেটআপ (JDK 17)
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
 
-      # ৩. ফ্লাটার সেটআপ করা
+      # ৩. ফ্লাটার সেটআপ
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.x'
           channel: 'stable'
 
-                # ৪. পাইথন লাইব্রেরি ইনস্টল করা (Pillow এবং Google GenAI সহ)
-      - name: Install Python Dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install Pillow google-generativeai
-        
-          
-
-      # ৫. প্যাকেজ নাম এবং SDK ডাইনামিকালি পরিবর্তন (ডুপ্লিকেট এবং AGP ফিক্স)
-      - name: Update Package and SDK
-        run: |
-          NEW_PKG="${{ github.event.client_payload.package_name }}"
-          if [ -z "$NEW_PKG" ]; then NEW_PKG="com.wasim.ai_bd"; fi
-          TARGET_SDK="35"
-          
-          echo "Updating to Package: $NEW_PKG and SDK: $TARGET_SDK"
-          
-          # প্রথমে ডুপ্লিকেট রোধ করতে পুরনো সব SDK রিলেটেড লাইন মুছে ফেলা
-          find android/ -name "build.gradle*" -exec sed -i "/targetSdkVersion/d" {} + || true
-          find android/ -name "build.gradle*" -exec sed -i "/compileSdkVersion/d" {} + || true
-          
-          # এখন ফ্রেশভাবে ভ্যালুগুলো বসানো (applicationId এর নিচেই এগুলো যোগ হবে)
-          find android/ -name "build.gradle*" -exec sed -i "s/applicationId \".*\"/applicationId \"$NEW_PKG\"\n        compileSdkVersion $TARGET_SDK\n        targetSdkVersion $TARGET_SDK/g" {} + || true
-          
-          # নেমস্পেস ফিক্স
-          find android/ -name "build.gradle*" -exec sed -i "s/namespace = \".*\"/namespace = \"$NEW_PKG\"/g" {} + || true
-          find android/ -name "build.gradle*" -exec sed -i "s/namespace \".*\"/namespace \"$NEW_PKG\"/g" {} + || true
-
-      # ৬. অ্যাসেটস অটো-রেজিস্ট্রেশন
-      - name: Register Assets
-        run: |
-          mkdir -p assets
-          if ! grep -q "assets:" pubspec.yaml; then
-            echo "  assets:" >> pubspec.yaml
-            echo "    - assets/" >> pubspec.yaml
-          fi
-
-      # ७. AI কোড ইনজেকশন (Gemini Python Script)
+      # ৪. এআই কোড ইনজেকশন (Llama/Hugging Face Script)
       - name: AI Code Injection
-       run: |
-        if [ -f builder_script.py ]; then
+        run: |
+          if [ -f builder_script.py ]; then
             python3 builder_script.py "${{ github.event.client_payload.prompt }}" "${{ github.event.client_payload.asset_name }}"
           fi
-       env:
+        env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
 
-
-      # ৮. গ্র্যাডল ফাইল এবং প্রোপার্টিজ জেনারেট করা (৮.১৩ ভার্সন মার্জড)
+      # ৫. অ্যান্ড্রয়েড ফাইল ও গ্র্যাডল কনফিগারেশন (৮.১৩)
       - name: Generate Essential Android Files
         run: |
-          # আগের কোনো কনফ্লিক্টিং ফাইল থাকলে মুছে ফেলা
           rm -rf android
-          
-          # নতুন প্যাকেজ নাম দিয়ে ফ্রেশ অ্যান্ড্রয়েড প্রজেক্ট তৈরি করা
           NEW_PKG="${{ github.event.client_payload.package_name }}"
           if [ -z "$NEW_PKG" ]; then NEW_PKG="com.wasim.ai_bd"; fi
           
           flutter create . --platforms android --org ${NEW_PKG%.*}
           
-          # Gradle Wrapper আপডেট করা (৮.১৩ ভার্সনে - লগের এরর অনুযায়ী)
           mkdir -p android/gradle/wrapper
           cat <<EOT > android/gradle/wrapper/gradle-wrapper.properties
           distributionBase=GRADLE_USER_HOME
@@ -98,7 +55,6 @@ jobs:
           distributionUrl=https\://services.gradle.org/distributions/gradle-8.13-all.zip
           EOT
           
-          # AGP এবং মেমোরি ফিক্স
           cat <<EOT > android/gradle.properties
           org.gradle.jvmargs=-Xmx4G
           android.useAndroidX=true
@@ -111,13 +67,13 @@ jobs:
           flutter pub get
           chmod +x android/gradlew
 
-      # ৯. Base64 থেকে JKS ফাইল জেনারেট করা
+      # ৬. কীস্টোর ডিকোড (Signing)
       - name: Decode Keystore
         run: |
           mkdir -p android/app
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
 
-      # ১০. ফাইনাল APK বিল্ড
+      # ৭. ফাইনাল APK বিল্ড (Release)
       - name: Build APK (Release)
         run: |
           flutter build apk --release \
@@ -130,12 +86,10 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
 
-            # ১১. তৈরি হওয়া APK ফাইলটি আপলোড করা
+      # ৮. APK আপলোড করা
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Generated-AI-APK
-          # নিচের পাথটি ঠিক আপনার লগের নামের সাথে মিলিয়ে দেওয়া হলো
           path: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
-          
           
